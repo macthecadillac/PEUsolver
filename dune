@@ -1,0 +1,4 @@
+(executable
+  (name main)
+  (modules Main AOStar)
+  (libraries containers))
