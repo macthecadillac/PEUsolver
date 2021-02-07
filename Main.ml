@@ -1,11 +1,10 @@
 open Containers
 open Fun
 
-module Test = struct
-  open AOStar
+module A = AOStar.Make (struct
   module T = Tree
-
-  type t = int
+  open AOStar
+  include Int
 
   let testTree = T.Node (Or (Nil, 0), [
                    T.Node (And (Nil, 1), [
@@ -35,8 +34,6 @@ module Test = struct
                    ])
                  ])
 
-  let equal = Int.equal
-
   let rec remove_desc = function
       T.Node (Or (a, b), l) -> T.Node (Or (a, b), [])
     | T.Node (And (a, b), l) -> T.Node (And (a, b), [])
@@ -56,28 +53,7 @@ module Test = struct
   let validate t =
     Format.printf "%a\n" (T.pp Int.pp) t;
     false
-
-  let pp = Int.pp
-end
-
-module A = AOStar.Make (Test)
-
-let pp =
-  let pp_sep fmt () = Format.fprintf fmt ", " in
-  let pp_start fmt () = Format.fprintf fmt "(" in
-  let pp_stop fmt () = Format.fprintf fmt ")" in
-  let pair_pp = Pair.pp ~pp_sep ~pp_start ~pp_stop Int.pp Int.pp in
-  Tree.pp (AOStar.node_pp pair_pp)
-
-let tree_list_pp =
-  let pp_sep fmt () = Format.fprintf fmt ", " in
-  let pp_start fmt () = Format.fprintf fmt "(" in
-  let pp_stop fmt () = Format.fprintf fmt ")" in
-  let pair_pp = Pair.pp ~pp_sep ~pp_start ~pp_stop Int.pp Int.pp in
-  let pp_sep fmt () = Format.fprintf fmt ";\n\t" in
-  let pp_start fmt () = Format.fprintf fmt "[" in
-  let pp_stop fmt () = Format.fprintf fmt "]" in
-  List.pp ~pp_sep ~pp_start ~pp_stop pair_pp
+end)
 
 let () =
   (* this will error out. The point is to have it print out all the generated

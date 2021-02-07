@@ -1,3 +1,5 @@
+(** A modified AO* Algorithm that continues solving until it finds as solution
+    that validates *)
 open Containers
 open Fun
 
@@ -13,16 +15,16 @@ let mark_pp fmt = function
     Nil -> Format.fprintf fmt "Nil"
   | Solved -> Format.fprintf fmt "Solved"
 
-type 'a node = And of mark * 'a | Or of mark * 'a
+type 'a node = And of 'a | Or of 'a
 
 let node_pp pp_item fmt = function
-    And (m, a) -> Format.fprintf fmt "And (%a, %a)" mark_pp m pp_item a
-  | Or (m, a) -> Format.fprintf fmt "Or (%a, %a)" mark_pp m pp_item a
+    And a -> Format.fprintf fmt "And %a" pp_item a
+  | Or a -> Format.fprintf fmt "Or %a" pp_item a
 
 module type I = sig
   type t
   val equal : t -> t -> bool
-  val successors : t -> (int * t) node Tree.t list
+  val successors : t -> (mark * (int * t)) node Tree.t list
   val est_cost : t -> int
   val validate : t Tree.t -> bool
   val pp : t printer
@@ -32,9 +34,10 @@ module type S = sig
   type elt
   type t
   val init : elt -> t
-  val solve : t -> t
+  val try_solve : t -> t
   val extract : t -> elt Tree.t
   val run : t -> elt Tree.t
+  val pp : t printer
 end
 
 module Make (N : I) : S with type elt = N.t = struct
@@ -43,31 +46,31 @@ module Make (N : I) : S with type elt = N.t = struct
   exception CorruptState
   exception SolutionNotFound
 
-  let pp =
-    let pp_sep fmt () = Format.fprintf fmt ", " in
-    let pp_start fmt () = Format.fprintf fmt "(" in
-    let pp_stop fmt () = Format.fprintf fmt ")" in
-    let pair_pp = Pair.pp ~pp_sep ~pp_start ~pp_stop Int.pp N.pp in
-    Tree.pp (node_pp pair_pp)
-
   let rec cost = function
       Tree.Node (Or (_, (c, _)), _) | Tree.Node (And (_, (c, _)), _) -> c
 
-  let mark m = function
-      Tree.Node (Or (_, a), b) -> Tree.Node (Or (m, a), b)
-    | Tree.Node (And (_, a), b) -> Tree.Node (And (m, a), b)
-
-  let get_mark = function Tree.Node (Or (m, _), _) | Tree.Node (And (m, _), _) -> m
-
-  let is_solved = get_mark %> mark_eq Solved
+  let is_solved =
+    mark_eq Solved
+    % function Tree.Node (Or (m, _), _) | Tree.Node (And (m, _), _) -> m
 
   module H = PairingHeap.Make (struct
-    type t = (Int.t * N.t) node Tree.t
+    type t = (mark * (Int.t * N.t)) node Tree.t
     let compare t1 t2 = Int.compare (cost t1) (cost t2)
   end)
 
   type elt = N.t
-  type t = H.t * (Int.t * N.t) node Tree.t
+  type t = H.t * (mark * (Int.t * N.t)) node Tree.t
+
+  let pp =
+    let pp_sep fmt () = Format.fprintf fmt ", " in
+    let pp_start fmt () = Format.fprintf fmt "(" in
+    let pp_stop fmt () = Format.fprintf fmt ")" in
+    let tree_pp =
+      Tree.pp
+      @@ node_pp
+      @@ Pair.pp ~pp_start ~pp_stop ~pp_sep mark_pp
+      @@ Pair.pp ~pp_start ~pp_stop ~pp_sep Int.pp N.pp in
+    Pair.pp (H.pp tree_pp) tree_pp
 
   let init node =
     let t = Tree.Node (Or (Nil, (N.est_cost node, node)), []) in
@@ -83,17 +86,16 @@ module Make (N : I) : S with type elt = N.t = struct
 
   (* Computes the shallow equality of two trees. We only care about the equality
      of the top-most element *)
-  let rec shallow_eq t1 t2 =
-    match t1, t2 with
+  let shallow_eq = curry (function
       Tree.Node (Or (_, (_, a)), _), Tree.Node (Or (_, (_, b)), _) -> N.equal a b
     | Tree.Node (And (_, (_, a)), _), Tree.Node (And (_, (_, b)), _) -> N.equal a b
-    | _ -> false
+    | _ -> false)
 
-  let rec unmark_solved = function
-      Tree.Node (Or (_, a), l) -> Tree.Node (Or (Nil, a), List.map unmark_solved l)
-    | Tree.Node (And (_, a), l) -> Tree.Node (And (Nil, a), List.map unmark_solved l)
+  let rec unmark = function
+      Tree.Node (Or (_, a), l) -> Tree.Node (Or (Nil, a), List.map unmark l)
+    | Tree.Node (And (_, a), l) -> Tree.Node (And (Nil, a), List.map unmark l)
 
-  let solve a =
+  let try_solve a =
     (* a helper function that expands the nodes one level at a time *)
     let rec aux path tree =
       match path, tree with
@@ -102,16 +104,16 @@ module Make (N : I) : S with type elt = N.t = struct
       | _, ((Tree.Node (And (Solved, _), _)) as a) -> [path], a
       (* If the And node has an element (an ordinary tree), then expand to its
          descendants. Afterward, compute all the legal descendant combintations. *)
-      | Tree.Node (And (pm, (_, pn)), []), Tree.Node (And (m, (_, n)), []) ->
+      | Tree.Node (And (_, (_, pn)), []), Tree.Node (And (m, (_, n)), []) ->
           let l = succ n in
           let c = List.fold_left (fun acc n -> cost n + acc + 1) 0 l in
-          let newPaths = [Tree.Node (And (pm, (c, pn)), l)] in
+          let newPaths = [Tree.Node (And (Nil, (c, pn)), l)] in
           let m' = if List.is_empty l then Solved else m in
           newPaths, Tree.Node (And (m', (c, n)), l)
       (* if it is an And node, we need to call aux on every one of its
          descendants since with the way we defined the tree, And itself doesn't
          store data. Afterward, compute all the legal descndant combinations. *)
-      | Tree.Node (And (pm, (_, pn)), pl), Tree.Node (And (m, (c, n)), l) ->
+      | Tree.Node (And (_, (_, pn)), pl), Tree.Node (And (m, (c, n)), l) ->
           let pls', desc =
             List.combine (sort_branches pl) l
             |> List.map (uncurry aux)
@@ -129,20 +131,20 @@ module Make (N : I) : S with type elt = N.t = struct
               let* a = acc in
               return @@ x::a)
             [[]] pls'
-            |> map (fun ts -> Tree.Node (And (pm, (c', pn)), ts)) in
+            |> map (fun ts -> Tree.Node (And (Nil, (c', pn)), ts)) in
           newPaths, Tree.Node (And (m', (c', n)), desc)
       (* If it is an Or node with no computed descendants, compute all the
          descendants of the element. If none are found, mark the node as Solved *)
-      | Tree.Node (Or (pm, (_, pn)), []), Tree.Node (Or (m, (_, n)), []) ->
+      | Tree.Node (Or (_, (_, pn)), []), Tree.Node (Or (m, (_, n)), []) ->
           let l = succ n in
           let m', c = if List.is_empty l then Solved, 0 else m, cost (List.hd l) + 1 in
-          let newPaths = List.map (fun t -> Tree.Node (Or (pm, (cost t + 1, pn)), [t])) l in
+          let newPaths = List.map (fun t -> Tree.Node (Or (Nil, (cost t + 1, pn)), [t])) l in
           newPaths, Tree.Node (Or (m', (c, n)), l)
       (* If it is an Or node with computed descendants, find the child that
          matches the current node on the supplied path and expand. Afterward,
          compute a list of possible paths with the newly computed nodes and
          combine with the current path. *)
-      | Tree.Node (Or (pm, (_, pn)), [pa]), Tree.Node (Or (m, (_, n)), l) ->
+      | Tree.Node (Or (_, (_, pn)), [pa]), Tree.Node (Or (m, (_, n)), l) ->
           let eq = List.find (shallow_eq pa) l in
           let pas', expanded = aux pa eq in
           let rest = List.filter (not % shallow_eq pa) l in
@@ -150,7 +152,7 @@ module Make (N : I) : S with type elt = N.t = struct
           (* the expanded node might have a higher cost than the rest *)
           let sortedBranches = sort_branches @@ expanded::rest in
           let c = cost (List.hd sortedBranches) + 1 in
-          let newPaths = List.map (fun t -> Tree.Node (Or (pm, (cost t + 1, pn)), [t])) pas' in
+          let newPaths = List.map (fun t -> Tree.Node (Or (Nil, (cost t + 1, pn)), [t])) pas' in
           newPaths, Tree.Node (Or (m', (c, n)), sortedBranches)
       | _ -> raise CorruptState
     in
@@ -176,17 +178,16 @@ module Make (N : I) : S with type elt = N.t = struct
       | Tree.Node (Or (_, (_, n)), []) -> Tree.Node (n, [])
       | Tree.Node (And (_, (_, n)), l) -> Tree.Node (n, List.map aux l)
       | Tree.Node (Or (_, (_, n)), l) ->
-          Tree.Node (n, [List.find is_solved l |> aux])
-    in
-    aux t
+          Tree.Node (n, [aux @@ List.find is_solved l])
+    in aux t
 
   let run a =
-    let a' = solve a in
+    let a' = try_solve a in
     (* keep solving until validated (or errors out with no solution found) *)
     Seq.unfold (fun s ->
       if N.validate @@ extract s then None
       else 
-        let s' = solve @@ Pair.map_snd unmark_solved s in
+        let s' = try_solve @@ Pair.map_snd unmark s in
         Some (s', s')) a'
       |> Seq.fold (fun _ x -> x) a'
       |> extract
