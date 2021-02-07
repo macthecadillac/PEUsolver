@@ -1,15 +1,34 @@
-type mark = Nil | Min | Solved
-type 'a node = And of mark | Or of mark * 'a
+type 'a printer = Format.formatter -> 'a -> unit
 
-module type Node = sig
+type mark = Nil | Solved
+
+val mark_pp : mark printer
+
+type 'a node = And of mark * 'a | Or of mark * 'a
+
+val node_pp : 'a printer -> 'a node printer
+
+module type I = sig
   type t
 
+  val equal : t -> t -> bool
+  (** Equality test *)
+
   val successors : t -> (int * t) node Tree.t list
-  (** [successors t] finds the successors of element [t]. The return tree makes
-      up of the costs and the corresponding node elements *)
+  (** [successors t] finds the successors of element [t]. The return tree is
+      made of up of the costs and the corresponding node elements. Note:
+      successors of elements that are parts of an And node must all be Or nodes.
+      *)
 
   val est_cost : t -> int
   (** [est_cost t] estimates the cost of element [t] *)
+
+  val validate : t Tree.t -> bool
+  (** [validate t] validates that t fits the specification *)
+
+  val pp : t printer
+  (** a pretty printer. Technically not necessary but it a nice-to-have for
+      debug purposes *)
 end
 
 module type S = sig
@@ -27,9 +46,13 @@ module type S = sig
   (** [solve t] expands the branches using the AO* algorithm and finds a
       solution *)
 
-  val trace : t -> elt Tree.t
-  (** [trace t] takes a solved And-Or tree in the internal representation and
+  val extract : t -> elt Tree.t
+  (** [extract t] takes a solved And-Or tree in the internal representation and
       returns the solution subtree as an ordinary tree *)
+
+  val run : t -> elt Tree.t
+  (** [run t] repeatedly solves [t] using the AO* algorithm until a solution
+      validates *)
 end
 
-module Make (N : Node) : S with type elt = N.t
+module Make (N : I) : S with type elt = N.t
