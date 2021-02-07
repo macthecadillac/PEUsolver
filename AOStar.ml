@@ -103,18 +103,15 @@ module Make (N : I) : S with type elt = N.t = struct
       (* If the And node has an element (an ordinary tree), then expand to its
          descendants. Afterward, compute all the legal descendant combintations. *)
       | Tree.Node (And (pm, (_, pn)), []), Tree.Node (And (m, (_, n)), []) ->
-          (* Format.printf "Down one level (AND [])\n"; *)
           let l = succ n in
           let c = List.fold_left (fun acc n -> cost n + acc + 1) 0 l in
           let newPaths = [Tree.Node (And (pm, (c, pn)), l)] in
           let m' = if List.is_empty l then Solved else m in
-          (* Format.printf "Up one level\n"; *)
           newPaths, Tree.Node (And (m', (c, n)), l)
       (* if it is an And node, we need to call aux on every one of its
          descendants since with the way we defined the tree, And itself doesn't
          store data. Afterward, compute all the legal descndant combinations. *)
       | Tree.Node (And (pm, (_, pn)), pl), Tree.Node (And (m, (c, n)), l) ->
-          (* Format.printf "Down one level (AND l)\n"; *)
           let pls', desc =
             List.combine (sort_branches pl) l
             |> List.map (uncurry aux)
@@ -133,36 +130,28 @@ module Make (N : I) : S with type elt = N.t = struct
               return @@ x::a)
             [[]] pls'
             |> map (fun ts -> Tree.Node (And (pm, (c', pn)), ts)) in
-          (* Format.printf "Up one level\n"; *)
           newPaths, Tree.Node (And (m', (c', n)), desc)
       (* If it is an Or node with no computed descendants, compute all the
          descendants of the element. If none are found, mark the node as Solved *)
       | Tree.Node (Or (pm, (_, pn)), []), Tree.Node (Or (m, (_, n)), []) ->
-          (* Format.printf "Down one level (OR [])\n"; *)
           let l = succ n in
-          let m', c = if List.is_empty l then Solved, 0 else m, cost @@ List.hd l in
-          let newPaths = List.map (fun t -> Tree.Node (Or (pm, (c, pn)), [t])) l in
-          (* Format.printf "Up one level\n"; *)
+          let m', c = if List.is_empty l then Solved, 0 else m, cost (List.hd l) + 1 in
+          let newPaths = List.map (fun t -> Tree.Node (Or (pm, (cost t + 1, pn)), [t])) l in
           newPaths, Tree.Node (Or (m', (c, n)), l)
       (* If it is an Or node with computed descendants, find the child that
          matches the current node on the supplied path and expand. Afterward,
          compute a list of possible paths with the newly computed nodes and
          combine with the current path. *)
       | Tree.Node (Or (pm, (_, pn)), [pa]), Tree.Node (Or (m, (_, n)), l) ->
-          (* Format.printf "Down one level (OR l)\n"; *)
-          (* let pp_sep fmt () = Format.fprintf fmt ";\n       " in *)
-          (* let pp_start fmt () = Format.fprintf fmt "[" in *)
-          (* let pp_stop fmt () = Format.fprintf fmt "]" in *)
-          (* Format.printf "LHS: %a\n" pp pa; *)
-          (* Format.printf "List: %a\n" (List.pp ~pp_sep ~pp_start ~pp_stop pp) l; *)
           let eq = List.find (shallow_eq pa) l in
           let pas', expanded = aux pa eq in
           let rest = List.filter (not % shallow_eq pa) l in
           let m' = if is_solved expanded then Solved else m in
-          let c = cost expanded + 1 in
-          let newPaths = List.map (fun t -> Tree.Node (Or (pm, (c, pn)), [t])) pas' in
-          (* Format.printf "Up one level\n"; *)
-          newPaths, Tree.Node (Or (m', (c, n)), sort_branches @@ expanded::rest)
+          (* the expanded node might have a higher cost than the rest *)
+          let sortedBranches = sort_branches @@ expanded::rest in
+          let c = cost (List.hd sortedBranches) + 1 in
+          let newPaths = List.map (fun t -> Tree.Node (Or (pm, (cost t + 1, pn)), [t])) pas' in
+          newPaths, Tree.Node (Or (m', (c, n)), sortedBranches)
       | _ -> raise CorruptState
     in
     (* We tuck the "while unsolved do" loop into Seq.t. The Seq.unfold function
@@ -170,7 +159,6 @@ module Make (N : I) : S with type elt = N.t = struct
        Seq.fold function forces the values until the last element, which will be
        our solution. *)
     Seq.unfold (fun (h, t) ->
-      (* Format.printf "NEXT ITER\n"; *)
       if is_solved t then None
       else
         let p =
@@ -197,9 +185,9 @@ module Make (N : I) : S with type elt = N.t = struct
     (* keep solving until validated (or errors out with no solution found) *)
     Seq.unfold (fun s ->
       if N.validate @@ extract s then None
-      else (
+      else 
         let s' = solve @@ Pair.map_snd unmark_solved s in
-        Some (s', s'))) a'
+        Some (s', s')) a'
       |> Seq.fold (fun _ x -> x) a'
       |> extract
 end
