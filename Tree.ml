@@ -15,16 +15,26 @@ let rec fold_list f (Node (a, ts)) = List.map (fold_list f) ts |> f a
 (* preorder *)
 let flatten t = fold (Fun.flip List.cons) [] t
 
-let pp pp_item fmt t =
+let rec debug pp_item fmt = function
+    Node (a, []) -> Format.fprintf fmt "Leaf %a" pp_item a
+  | Node (a, l) ->
+      let list_pp =
+        List.pp
+          ~pp_start:(fun fmt () -> Format.fprintf fmt "[")
+          ~pp_stop:(fun fmt () -> Format.fprintf fmt "]")
+          ~pp_sep:(fun fmt () -> Format.fprintf fmt "; ")
+          (debug pp_item)
+      in Format.fprintf fmt "Node %a %a" pp_item a list_pp l
+
+
+let pp pp_item =
   let rec list_pp s fmt = function
       [] -> ()
-    | [a] -> Format.fprintf fmt "\n%s└── %a" s (aux ("    " ^ s)) a
-    | hd::tl ->
-        Format.fprintf fmt "\n%s├── %a" s (aux ("    │" ^ (String.drop 1 s))) hd;
-        list_pp s fmt tl;
-  and aux s fmt = function
+    | [a] -> Format.fprintf fmt "\n%s└── %a" s (node_pp (s ^ "    ")) a
+    | hd::tl -> Format.fprintf fmt "\n%s├── %a" s (node_pp (s ^ "│   ")) hd;
+                list_pp s fmt tl;
+  and node_pp s fmt = function
       Node (a, []) -> Format.fprintf fmt "%a" pp_item a;
     | Node (a, l) ->
-        Format.fprintf fmt "%a" pp_item a;
-        Format.fprintf fmt "%a" (list_pp s) l;
-  in aux "" fmt t
+        Format.fprintf fmt "%a%a" pp_item a (list_pp s) l;
+  in node_pp ""

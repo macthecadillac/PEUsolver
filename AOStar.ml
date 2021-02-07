@@ -61,16 +61,18 @@ module Make (N : I) : S with type elt = N.t = struct
   type elt = N.t
   type t = H.t * (mark * (Int.t * N.t)) node Tree.t
 
-  let pp =
+  let pp fmt (h, t) =
     let pp_sep fmt () = Format.fprintf fmt ", " in
     let pp_start fmt () = Format.fprintf fmt "(" in
     let pp_stop fmt () = Format.fprintf fmt ")" in
-    let tree_pp =
-      Tree.pp
+    let tree_pp f =
+      f
       @@ node_pp
       @@ Pair.pp ~pp_start ~pp_stop ~pp_sep mark_pp
       @@ Pair.pp ~pp_start ~pp_stop ~pp_sep Int.pp N.pp in
-    Pair.pp (H.pp tree_pp) tree_pp
+    Format.fprintf fmt "Heap:\n%a\nTree:\n%a"
+      (H.pp (tree_pp Tree.debug)) h
+      (tree_pp Tree.pp) t
 
   let init node =
     let t = Tree.Node (Or (Nil, (N.est_cost node, node)), []) in
@@ -95,6 +97,8 @@ module Make (N : I) : S with type elt = N.t = struct
       Tree.Node (Or (_, a), l) -> Tree.Node (Or (Nil, a), List.map unmark l)
     | Tree.Node (And (_, a), l) -> Tree.Node (And (Nil, a), List.map unmark l)
 
+  let sum_desc_costs = List.fold_left (fun acc n -> cost n + acc + 1) 0
+
   let try_solve a =
     (* a helper function that expands the nodes one level at a time *)
     let rec aux path tree =
@@ -106,19 +110,19 @@ module Make (N : I) : S with type elt = N.t = struct
          descendants. Afterward, compute all the legal descendant combintations. *)
       | Tree.Node (And (_, (_, pn)), []), Tree.Node (And (m, (_, n)), []) ->
           let l = succ n in
-          let c = List.fold_left (fun acc n -> cost n + acc + 1) 0 l in
+          let c = sum_desc_costs l in
           let newPaths = [Tree.Node (And (Nil, (c, pn)), l)] in
           let m' = if List.is_empty l then Solved else m in
           newPaths, Tree.Node (And (m', (c, n)), l)
       (* if it is an And node, we need to call aux on every one of its
          descendants since with the way we defined the tree, And itself doesn't
          store data. Afterward, compute all the legal descndant combinations. *)
-      | Tree.Node (And (_, (_, pn)), pl), Tree.Node (And (m, (c, n)), l) ->
+      | Tree.Node (And (_, (_, pn)), pl), Tree.Node (And (m, (_, n)), l) ->
           let pls', desc =
             List.combine (sort_branches pl) l
             |> List.map (uncurry aux)
             |> List.split in
-          let c' = List.fold_left (fun acc n -> cost n + acc + 1) 0 desc in
+          let c = sum_desc_costs desc in
           let m' = if List.for_all is_solved desc then Solved else m in
           let newPaths =
             let open List in
@@ -131,8 +135,8 @@ module Make (N : I) : S with type elt = N.t = struct
               let* a = acc in
               return @@ x::a)
             [[]] pls'
-            |> map (fun ts -> Tree.Node (And (Nil, (c', pn)), ts)) in
-          newPaths, Tree.Node (And (m', (c', n)), desc)
+            |> map (fun ts -> Tree.Node (And (Nil, (sum_desc_costs ts, pn)), ts)) in
+          newPaths, Tree.Node (And (m', (c, n)), desc)
       (* If it is an Or node with no computed descendants, compute all the
          descendants of the element. If none are found, mark the node as Solved *)
       | Tree.Node (Or (_, (_, pn)), []), Tree.Node (Or (m, (_, n)), []) ->

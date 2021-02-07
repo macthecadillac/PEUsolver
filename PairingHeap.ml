@@ -62,12 +62,14 @@ module Make (E : ORDERING) : S
       Empty -> Empty
     | Heap (_, subheaps) -> _merge_pairs empty subheaps
 
-  let rec pp pp_item fmt = function
-      Empty -> Format.fprintf fmt "Empty"
-    | Heap (a, l) ->
-        let pp_start fmt () = Format.fprintf fmt "[" in
-        let pp_stop fmt () = Format.fprintf fmt "]" in
-        let pp_sep fmt () = Format.fprintf fmt "; " in
-        let pp_list = List.pp ~pp_start ~pp_stop ~pp_sep (pp pp_item) in
-        Format.fprintf fmt "Heap %a %a" pp_item a pp_list l
+  let pp pp_item =
+    let rec list_pp s fmt = function
+        [] -> ()
+      | [a] -> Format.fprintf fmt "\n%s└── %a" s (node_pp (s ^ "    ")) a
+      | hd::tl -> Format.fprintf fmt "\n%s├── %a" s (node_pp (s ^ "│   ")) hd;
+                  list_pp s fmt tl;
+    and node_pp s fmt = function
+        Empty -> ()
+      | Heap (a, l) -> Format.fprintf fmt "%a%a" pp_item a (list_pp s) l;
+    in node_pp ""
 end

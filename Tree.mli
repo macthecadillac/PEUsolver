@@ -14,4 +14,6 @@ val fold_list : ('a -> 'b list -> 'b) -> 'a t -> 'b
 
 val flatten : 'a t -> 'a list
 
+val debug : 'a printer -> 'a t printer
+
 val pp : 'a printer -> 'a t printer
