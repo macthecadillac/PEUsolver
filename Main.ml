@@ -59,5 +59,5 @@ let () =
   (* this will error out. The point is to have it print out all the generated
      solutions *)
   let solved = A.run @@ A.init 0 in
-  Format.printf "%a" (Tree.pp Int.pp) solved
-  (* Format.printf "%a\n" (List.pp pp) (Test.successors 7); *)
+  let pp = Result.pp' (Tree.pp Int.pp) AOStar.error_pp in
+  Format.printf "%a\n" pp solved

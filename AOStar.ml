@@ -21,6 +21,10 @@ let node_pp pp_item fmt = function
     And a -> Format.fprintf fmt "And %a" pp_item a
   | Or a -> Format.fprintf fmt "Or %a" pp_item a
 
+type error = SolutionNotFound
+
+let error_pp fmt _ = Format.fprintf fmt "SolutionNotFound"
+
 module type I = sig
   type t
   val equal : t -> t -> bool
@@ -34,24 +38,18 @@ module type S = sig
   type elt
   type t
   val init : elt -> t
-  val try_solve : t -> t
+  val try_solve : t -> (t, error) result
   val extract : t -> elt Tree.t
-  val run : t -> elt Tree.t
+  val run : t -> (elt Tree.t, error) result
   val pp : t printer
 end
 
 module Make (N : I) : S with type elt = N.t = struct
 
-  exception InvalidTree
   exception CorruptState
-  exception SolutionNotFound
 
-  let rec cost = function
+  let cost = function
       Tree.Node (Or (_, (c, _)), _) | Tree.Node (And (_, (c, _)), _) -> c
-
-  let is_solved =
-    mark_eq Solved
-    % function Tree.Node (Or (m, _), _) | Tree.Node (And (m, _), _) -> m
 
   module H = PairingHeap.Make (struct
     type t = (mark * (Int.t * N.t)) node Tree.t
@@ -60,6 +58,10 @@ module Make (N : I) : S with type elt = N.t = struct
 
   type elt = N.t
   type t = H.t * (mark * (Int.t * N.t)) node Tree.t
+
+  let is_solved =
+    mark_eq Solved
+    % function Tree.Node (Or (m, _), _) | Tree.Node (And (m, _), _) -> m
 
   let pp fmt (h, t) =
     let pp_sep fmt () = Format.fprintf fmt ", " in
@@ -98,6 +100,8 @@ module Make (N : I) : S with type elt = N.t = struct
     | Tree.Node (And (_, a), l) -> Tree.Node (And (Nil, a), List.map unmark l)
 
   let sum_desc_costs = List.fold_left (fun acc n -> cost n + acc + 1) 0
+
+  let stop_on_err _ = function Ok x -> Ok x, `Continue | e -> e, `Stop
 
   let try_solve a =
     (* a helper function that expands the nodes one level at a time *)
@@ -164,17 +168,19 @@ module Make (N : I) : S with type elt = N.t = struct
        lazily evaluates the tree after each iteration of the loop and the
        Seq.fold function forces the values until the last element, which will be
        our solution. *)
-    Seq.unfold (fun (h, t) ->
+    OSeq.unfold (fun r ->
+      let open Option in
+      let* h, t = of_result r in
       if is_solved t then None
       else
-        let p =
-          match H.find_min h with
-            Some a -> a
-          | None -> raise SolutionNotFound in
-        let ts, t' = aux p t in
-        let h' = List.fold_left H.insert (H.delete_min h) ts in
-        Some ((h', t'), (h', t'))) a
-      |> Seq.fold (fun _ x -> x) a
+        let x =
+          let open Result in
+          let* p = H.find_min h |> of_opt |> map_err (const SolutionNotFound) in
+          let ts, t' = aux p t in
+          let h' = List.fold_left H.insert (H.delete_min h) ts in
+          Ok (h', t') in
+        Some (x, x)) (Ok a)
+        |> OSeq.fold_while stop_on_err (Ok a)
 
   let extract (_, t) =
     let rec aux = function
@@ -186,13 +192,14 @@ module Make (N : I) : S with type elt = N.t = struct
     in aux t
 
   let run a =
-    let a' = try_solve a in
     (* keep solving until validated (or errors out with no solution found) *)
-    Seq.unfold (fun s ->
+    Seq.unfold (fun r ->
+      let open Option in
+      let* s = of_result r in
       if N.validate @@ extract s then None
       else 
         let s' = try_solve @@ Pair.map_snd unmark s in
-        Some (s', s')) a'
-      |> Seq.fold (fun _ x -> x) a'
-      |> extract
+        Some (s', s')) (try_solve a)
+        |> OSeq.fold_while stop_on_err (Ok a)
+        |> Result.map extract
 end

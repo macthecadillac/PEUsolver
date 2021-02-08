@@ -11,6 +11,10 @@ type 'a node = And of 'a | Or of 'a
 
 val node_pp : 'a printer -> 'a node printer
 
+type error = SolutionNotFound
+
+val error_pp : error printer
+
 module type I = sig
   type t
 
@@ -47,7 +51,7 @@ module type S = sig
 
   (** [try_solve t] expands the branches using the AO* algorithm and finds a
       solution *)
-  val try_solve : t -> t
+  val try_solve : t -> (t, error) result
 
   (** [extract t] takes a solved And-Or tree in the internal representation and
       returns the solution subtree as an ordinary tree *)
@@ -55,7 +59,7 @@ module type S = sig
 
   (** [run t] repeatedly solves [t] using the AO* algorithm until a solution
       validates *)
-  val run : t -> elt Tree.t
+  val run : t -> (elt Tree.t, error) result
 
   (** Pretty printer for the internal rep *)
   val pp : t printer
