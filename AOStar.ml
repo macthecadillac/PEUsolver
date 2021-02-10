@@ -59,7 +59,7 @@ module Make (N : I) : S with type elt = N.t = struct
   type t = H.t * tree
 
   module HashSet = Hashtbl.Make (struct
-    type t = tree
+    type t = elt Tree.t
     let hash = Hash.poly
     let equal a b = hash a = hash b
   end)
@@ -152,7 +152,26 @@ module Make (N : I) : S with type elt = N.t = struct
     let open Result in
     let* y = x in
     if pred y then x
-    else while_do_result pred f (f y)
+    else while_do_result pred f @@ f y
+
+  let extract (_, t) =
+    let rec aux_and = function
+        And (_, _, n, []) -> Tree.Node (n, [])
+      | And (_, _, n, l) -> Tree.Node (n, List.map aux_or l)
+    and aux_or = function
+        Or (_, _, []) -> raise InvalidTree
+      | Or (_, _, l) -> aux_and (List.find is_solved_and l)
+    in aux_and t
+
+  let to_tree =
+    let rec aux_and = function
+        And (_, _, n, []) -> Tree.Node (n, [])
+      | And (_, _, n, l) -> Tree.Node (n, List.map aux_or l)
+    and aux_or = function
+        Or (_, _, []) -> raise InvalidTree
+      | Or (_, _, [a]) -> aux_and a
+      | _ -> raise CorruptState
+    in aux_and
 
   let try_solve =
     let rec aux_and chosenPath tree =
@@ -198,37 +217,28 @@ module Make (N : I) : S with type elt = N.t = struct
           Format.printf "a: %a\nb: %a\n" or_pp a or_pp b;
           raise CorruptState
     in
-    (* We tuck the "while unsolved do" loop into Seq.t. The Seq.unfold function
-       lazily evaluates the tree after each iteration of the loop and the
-       Seq.fold function forces the values until the last element, which will be
-       our solution. *)
     Result.return
     %> while_do_result
        (is_solved_and % snd)
        (function h, t ->
          let open Result in
-         let* p = H.find_min h |> of_opt |> map_err (const SolutionNotFound) in
-         let t' = aux_and p t in
-         let ts = enumerate_paths t'
-           |> List.filter (fun t -> not @@ HashSet.mem hs t) in
+         let* hp, p =
+           let aux h = H.find_min h |> of_opt |> map (Pair.make h) in
+           while_do_result (not % HashSet.mem hs % to_tree % snd)
+                           (function h, _ -> aux @@ H.delete_min h)
+                           (aux h)
+           |> map_err (const SolutionNotFound) in
+         let t' = aux_and p (unmark t) in
+         let ts = enumerate_paths t' in
          let h' = List.fold_left H.insert H.empty ts in
          Ok (h', t'))
-
-  let extract (_, t) =
-    let rec aux_and = function
-        And (_, _, n, []) -> Tree.Node (n, [])
-      | And (_, _, n, l) -> Tree.Node (n, List.map aux_or l)
-    and aux_or = function
-        Or (_, _, []) -> raise InvalidTree
-      | Or (_, _, l) -> aux_and (List.find is_solved_and l)
-    in aux_and t
 
   let run =
     try_solve
       %> while_do_result
          (N.validate % extract)
          (fun s ->
-           let minPath = H.find_min_exn @@ fst s in
+           let minPath = extract s in
            HashSet.add hs minPath ();
            try_solve @@ Pair.map H.delete_min unmark s)
       %> Result.map extract
