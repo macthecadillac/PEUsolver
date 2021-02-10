@@ -15,7 +15,7 @@ let rec fold_list f (Node (a, ts)) = List.map (fold_list f) ts |> f a
 (* preorder *)
 let flatten t = fold (Fun.flip List.cons) [] t
 
-let rec debug pp_item fmt = function
+let rec pp' pp_item fmt = function
     Node (a, []) -> Format.fprintf fmt "Leaf %a" pp_item a
   | Node (a, l) ->
       let list_pp =
@@ -23,7 +23,7 @@ let rec debug pp_item fmt = function
           ~pp_start:(fun fmt () -> Format.fprintf fmt "[")
           ~pp_stop:(fun fmt () -> Format.fprintf fmt "]")
           ~pp_sep:(fun fmt () -> Format.fprintf fmt "; ")
-          (debug pp_item)
+          (pp' pp_item)
       in Format.fprintf fmt "Node %a %a" pp_item a list_pp l
 
 

@@ -1,63 +1,49 @@
 open Containers
 open Fun
 
-module A = AOStar.Make (struct
-  module T = Tree
+module T = struct
   open AOStar
-  include Int
 
-  let testTree = T.Node (Or (Nil, 0), [
-                   T.Node (And (Nil, 1), [
-                     T.Node (Or (Nil, 3), [
-                       T.Node (Or (Nil, 15), []);
-                       T.Node (Or (Nil, 16), [])
-                     ]);
-                     T.Node (Or (Nil, 4), [
-                       T.Node (Or (Nil, 17), []);
-                       T.Node (Or (Nil, 18), [])
-                     ])
-                   ]);
-                   T.Node (Or (Nil, 2), [
-                     T.Node (Or (Nil, 5), [
-                       T.Node (Or (Nil, 8), []);
-                       T.Node (Or (Nil, 9), [])
-                     ]);
-                     T.Node (And (Nil, 6), [
-                       T.Node (Or (Nil, 10), []);
-                       T.Node (Or (Nil, 11), [])
-                     ]);
-                     T.Node (And (Nil, 7), [
-                       T.Node (Or (Nil, 12), []);
-                       T.Node (Or (Nil, 13), []);
-                       T.Node (Or (Nil, 14), [])
-                     ])
-                   ])
-                 ])
+  exception ImpossibleBranch
 
-  let rec remove_desc = function
-      T.Node (Or (a, b), l) -> T.Node (Or (a, b), [])
-    | T.Node (And (a, b), l) -> T.Node (And (a, b), [])
+  type nonterm = Plus | Mul
+  type term = Two
+  type t = N of nonterm | T of term
 
-  let successors i =
-    let rec aux i = function
-        T.Node (Or (_, j), l) | T.Node (And (_, j), l) when i = j ->
-          List.map (remove_desc % T.map (function
-              Or (m, a) -> Or (m, (a, a))
-            | And (m, a) -> And (m, (a, a)))) l
-      | T.Node (Or _, l) | T.Node (And _, l) -> List.map (aux i) l |> List.concat
-    in
-    aux i testTree
+  let equal = curry (function
+      N Plus, N Plus | N Mul, N Mul -> true
+    | T Two, T Two -> true
+    | _ -> false)
 
-  let est_cost = id
+  let possible_terms = [(1, T Two); (2, N Plus); (2, N Mul)]
+
+  let successors = function
+      N Plus | N Mul -> [possible_terms; possible_terms]
+    | T Two -> []
+
+  let est_cost = function
+      N Plus | N Mul -> 2
+    | T Two -> 1
+
+  let rec eval = function
+      Tree.Node (N Plus, [a; b]) -> (eval a) + (eval b)
+    | Tree.Node (N Mul, [a; b]) -> (eval a) * (eval b)
+    | Tree.Node (T Two, []) -> 2
+    | _ -> raise ImpossibleBranch
+
+  let pp fmt = function
+      N Plus -> Format.fprintf fmt "N Plus"
+    | N Mul -> Format.fprintf fmt "N Mul"
+    | T Two -> Format.fprintf fmt "T Two"
 
   let validate t =
-    Format.printf "%a\n" (T.pp Int.pp) t;
-    false
-end)
+    Format.printf "%a\n" (Tree.pp pp) t;
+    eval t = 10
+end
+
+module M = AOStar.Make (T)
 
 let () =
-  (* this will error out. The point is to have it print out all the generated
-     solutions *)
-  let solved = A.run @@ A.init 0 in
-  let pp = Result.pp' (Tree.pp Int.pp) AOStar.error_pp in
+  let solved = M.run @@ M.init T.(N Plus) in
+  let pp = Result.pp' (Tree.pp T.pp) AOStar.error_pp in
   Format.printf "%a\n" pp solved

@@ -7,10 +7,6 @@ type mark = Nil | Solved
 
 val mark_pp : mark printer
 
-type 'a node = And of 'a | Or of 'a
-
-val node_pp : 'a printer -> 'a node printer
-
 type error = SolutionNotFound
 
 val error_pp : error printer
@@ -25,7 +21,7 @@ module type I = sig
       made of up of the costs and the corresponding node elements. Note:
       successors of elements that are parts of an And node must all be Or nodes.
       *)
-  val successors : t -> (mark * (int * t)) node Tree.t list
+  val successors : t -> (int * t) list list
 
   (** [est_cost t] estimates the cost of element [t] *)
   val est_cost : t -> int
