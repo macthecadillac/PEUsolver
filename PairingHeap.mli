@@ -6,11 +6,15 @@ module type S = sig
   type elt
   type t
   val empty : t
+  val is_empty : t -> bool
   val find_min : t -> elt option
   val find_min_exn : t -> elt
   val meld : t -> t -> t
   val insert : t -> elt -> t
   val delete_min : t -> t
+  val of_seq : elt Seq.t -> t
+  (** convert to unsorted sequence *)
+  val to_seq : t -> elt Seq.t
   val pp : elt printer -> t printer
 end
 
