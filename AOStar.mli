@@ -23,9 +23,6 @@ module type I = sig
       *)
   val successors : t -> (int * t) list list
 
-  (** [est_cost t] estimates the cost of element [t] *)
-  val est_cost : t -> int
-
   (** [validate t] validates that t fits the specification *)
   val validate : t Tree.t -> bool
 
@@ -43,7 +40,7 @@ module type S = sig
   type t
 
   (** [init a] returns a singleton tree in the interal representation *)
-  val init : elt -> t
+  val init : (int * elt) list -> t
 
   (** [try_solve t] expands the branches using the AO* algorithm and finds a
       solution *)

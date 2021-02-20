@@ -17,16 +17,14 @@ module T = struct
 
   let possible_terms = [(1, T One); (1, T Two); (2, N Plus); (2, N Mul)]
 
+  let initItems = [(1, T One); (1, T Two); (2, N Plus); (2, N Mul)]
+
   let successors = function
       N Plus -> [[(1, T One); (1, T Two); (2, N Plus); (2, N Mul)];
                  [(1, T One); (1, T Two); (2, N Plus); (2, N Mul)]]
     | N Mul -> [[(1000000, T One); (1, T Two); (2, N Plus); (2, N Mul)];
                 [(1000000, T One); (1, T Two); (2, N Plus); (2, N Mul)]]
     | T One | T Two -> []
-
-  let est_cost = function
-      N Plus | N Mul -> 2
-    | T One | T Two -> 1
 
   let rec eval = function
       Tree.Node (N Plus, [a; b]) -> (eval a) + (eval b)
@@ -52,6 +50,6 @@ end
 module M = AOStar.Make (T)
 
 let () =
-  let solved = M.run @@ M.init T.(N Plus) in
+  let solved = M.run @@ M.init T.initItems in
   let pp = Result.pp' (Tree.pp T.pp) AOStar.error_pp in
   Format.printf "%a\n" pp solved
