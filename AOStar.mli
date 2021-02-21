@@ -43,7 +43,7 @@ module type S = sig
   type t
 
   (** [init a] returns a singleton tree in the interal representation *)
-  val init : elt -> t
+  val init : elt list -> t
 
   (** [try_solve t] expands the branches using the AO* algorithm and finds a
       solution *)

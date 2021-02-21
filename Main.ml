@@ -52,11 +52,11 @@ module T = struct
     (* Format.printf "%a\n\nBREAK\n\n" (Tree.pp pp) t; *)
     Format.print_flush ();
     (* let _ = read_line () in *)
-    eval t = 150
+    eval t = 100000
 end
 
 module M = AOStar.Make (T)
 
 let () =
-  let solved = M.run @@ M.init T.(N Mul) in
+  let solved = M.run @@ M.init T.[N Add; N Mul; N Pow] in
   Format.printf "%a\n" (Tree.pp T.pp) solved
