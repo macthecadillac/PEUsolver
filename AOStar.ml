@@ -3,6 +3,14 @@
 open Containers
 open Fun
 
+module List = struct
+  include List
+  let min = function
+      [] -> 0
+    | hd::tl -> List.fold_left min hd tl
+  let sum = List.fold_left (+) 0
+end
+
 type 'a printer = Format.formatter -> 'a -> unit
 
 type mark = Nil | Solved
@@ -38,224 +46,175 @@ module type S = sig
   val pp : t printer
 end
 
+(* A bunch of different printers for debugging *)
+let str_pp s fmt () = Format.fprintf fmt s
+
 module Make (N : I) : S with type elt = N.t = struct
 
   exception CorruptState
   exception InvalidTree
 
-  module H = PairingHeap.Make (struct
-    type t = int * (N.t list)
+  module rec HeapElt : sig
+    type t = int * (AndOr.node list)
+    val compare : t -> t -> int
+  end = struct
+    type t = int * (AndOr.node list)
     let compare a b = Int.compare (fst a) (fst b)
-  end)
+  end
+
+  and H : PairingHeap.S with type elt = HeapElt.t = PairingHeap.Make (HeapElt)
 
   (* The And-Or tree type *)
-  type and_node = And of mark * H.t * N.t * or_node list
-  and or_node = Or of mark * and_node list
+  and AndOr : sig
+    type t = H.t
+    type node = Node of mark * N.t * t
+  end = struct
+    type t = H.t
+    type node = Node of mark * N.t * t
+  end
 
-  let pick_min = function
-      [] -> 0
-    | hd::tl -> List.fold_left min hd tl
+  type elt = N.t
+  type t = AndOr.node
 
-  let and_cost = function And (_, h, n, _) ->
+  open AndOr
+
+  let desc (Node (_, n, h)) = H.find_min h |> Option.map snd
+
+  let cost (Node (_, n, h)) =
     match H.find_min h with
       None -> N.est_cost n
     | Some m -> fst m
 
-  let or_cost = function Or (_, l) -> pick_min @@ List.map and_cost l
+  let is_solved = mark_eq Solved % function Node (m, _, _) -> m
 
-  type elt = N.t
-  type t = or_node
-
-  module HashMap = Hashtbl.Make (struct
-    type t = N.t list
-    let hash = Hash.poly
-    let equal a b = hash a = hash b
-  end)
-
-  let is_solved_and = mark_eq Solved % function And (m, _, _, _) -> m
-  let is_solved_or = mark_eq Solved % function Or (m, _) -> m
-
-  (* A bunch of different printers for debugging *)
-  let str_pp s fmt () = Format.fprintf fmt s
-  let lpp = List.pp ~pp_sep:(str_pp "; ") ~pp_start:(str_pp "[") ~pp_stop:(str_pp "]")
-  let ppp = Pair.pp ~pp_sep:(str_pp ", ") ~pp_start:(str_pp "(") ~pp_stop:(str_pp ")")
-
-  let rec list_pp s pp fmt = function
-      [] -> ()
-    | [a] -> Format.fprintf fmt "\n%s└── %a" s (pp (s ^ "    ")) a
-    | hd::tl -> Format.fprintf fmt "\n%s├── %a" s (pp (s ^ "│   ")) hd;
-                list_pp s pp fmt tl
-
-  let rec and_pp' s fmt = function
-      And (m, h, n, []) -> Format.fprintf fmt "And %a, %a" mark_pp m N.pp n
-    | And (m, h, n, l) ->
-        Format.fprintf fmt "And %a %a %a" mark_pp m N.pp n (list_pp s or_pp') l
-
-  and or_pp' s fmt = function
-      Or (m, []) -> Format.fprintf fmt "Or %a" mark_pp m
-    | Or (m, l) ->
-        Format.fprintf fmt "Or %a %a" mark_pp m (list_pp s and_pp') l
-
-  let and_pp = and_pp' ""
-  let or_pp = or_pp' ""
-
-  let rec tree_boring_pp fmt (And (m, h, n, l)) =
-    Format.fprintf fmt "And %a %a %a" mark_pp m N.pp n
-    (List.pp ~pp_sep:(str_pp "; ")
-             ~pp_start:(str_pp "[")
-             ~pp_stop:(str_pp "]")
-             or_boring_pp) l
-
-  and or_boring_pp fmt (Or (m, l)) =
-    Format.fprintf fmt "Or %a %a" mark_pp m
-    (List.pp ~pp_sep:(str_pp "; ")
-             ~pp_start:(str_pp "[")
-             ~pp_stop:(str_pp "]")
-             tree_boring_pp) l
-
-  let pp = or_pp
-
-  let init nodes =
-    let l = List.map (fun x -> And (Nil, H.empty, x, [])) nodes in
-    Or (Nil, l)
-
-  let sum = List.fold_left (+) 0
+  let is_leaf (Node (_, _, h)) = H.is_empty h
 
   (* Extracts the element from the given AND node *)
-  let and_elt = function And (_, _, m, _) -> m
+  let node_elt (Node (_, n, _)) = n
+
+  let replace_desc (Node (m, n, h)) ns =
+    let m' = if List.for_all is_solved ns then Solved else m in
+    let cost = List.map cost ns |> List.sum in
+    let h' = H.delete_min h |> flip H.insert (cost, ns) in
+    Node (m', n, h')
+
+  let init =
+    List.fold_left (fun acc elt ->
+      (* An AND node with one descendant is the same as an or node with a
+         chosen branch *)
+      H.insert acc (N.est_cost elt, [Node (Nil, elt, H.empty)]))
+    H.empty
 
   (* Check if the element equals the element of the given node *)
-  let eq_elt n = N.equal n % and_elt
-
-  let is_leaf = function And (_, _, _, []) -> true | _ -> false
+  let eq_elt n = N.equal n % node_elt
 
   (* Remove all the marks in the tree *)
-  let unmark : or_node -> or_node =
-    let rec aux_and (And (_, h, a, l)) = And (Nil, h, a, List.map aux_or l)
-    and aux_or (Or (_, l)) = Or (Nil, List.map aux_and l)
-    in aux_or
+  let unmark =
+    let rec unmark_h h =
+      H.to_seq h
+      |> Seq.map (fun (c, l) -> c, List.map aux l)
+      |> H.of_seq
+    and aux (Node (_, n, h)) = Node (Nil, n, unmark_h h)
+    in unmark_h
 
-  let remove_previous_sol =
-    let is_solved_leaf = function And (_, h, _, _) as n ->
-        is_solved_and n && (is_leaf n || H.is_empty h) in
-    let find_node (n, Or (_, l)) = List.find (eq_elt n) l in
-    let chosen_nodes elts l = List.combine elts l |> List.map find_node in
-    let rebuild_heap l h =
-      let aux (c, elts) =
-        chosen_nodes elts l
-        |> List.map and_cost
-        |> sum
-        |> fun c' -> max c c', elts in
-      H.to_seq h |> Seq.map aux |> H.of_seq in
-    let rec aux_or = function
-        Or (Nil, _) as n -> n
-      | Or (Solved, l) -> Or (Nil, List.map aux_and l)
-    and aux_and = function
-        And (Nil, _, _, _) as n -> n
-      | And (Solved, h, a, l) ->
-          (* the min path is part of the discarded solution *)
-          match H.find_min h with
-            None -> And (Nil, h, a, l)
-          | Some (_, elts) ->
-              let choseAndNodes = chosen_nodes elts l in
-              let l' = List.map aux_or l in
-              if List.for_all is_solved_leaf choseAndNodes
-              then And (Nil, rebuild_heap l' @@ H.delete_min h, a, l')
-              else And (Nil, rebuild_heap l' h, a, l')
-    in aux_or
+  let extract h =
+    let open Option in
+    let rec aux (Node (_, n, h)) =
+      let* _, nodes = H.find_min h in
+      let* l = List.map aux nodes |> Option.sequence_l in
+      return @@ Tree.Node (n, l) in
+    let* _, firstNode = H.find_min h in
+    let* n = List.head_opt firstNode in
+    aux n
 
-  let sum_desc_costs = List.fold_left (fun acc n -> or_cost n + acc + 1) 0
+  let is_solved_leaf n = is_solved n && is_leaf n
+
+  let rec remove_previous_sol = function
+      Node (Nil, _, _) as n -> n
+    | Node (Solved, n, h) ->
+        match H.find_min h with
+          None -> Node (Nil, n, h)
+        | Some (_, ns) ->
+            if List.for_all is_solved_leaf ns
+            then Node (Nil, n, H.delete_min h)
+            else
+              let h' =
+                H.to_seq h
+                |> Seq.map (fun (c, l) -> c, List.map remove_previous_sol l)
+                |> H.of_seq in
+              Node (Nil, n, h')
+
+  (* let sum_desc_costs = List.fold_left (fun acc n -> or_cost n + acc + 1) 0 *)
 
   (* While loop *)
   let rec while_do pred f x =
     if pred x then x
     else while_do pred f @@ f x
 
-  (* Sort a list of nodes with the provided cost function *)
-  let sort_branches f =
-    List.map (Pair.dup_map f)
-    %> List.sort (fun (_, a) (_, b) -> Int.compare a b)
-    %> List.map fst
-
-  (* Helper function for extract *)
-  let rec tree_conv f =
-    let rec aux_and = function
-        And (_, _, n, []) -> Tree.Node (n, [])
-      | And (_, _, n, l) -> Tree.Node (n, List.map aux_or l)
-    and aux_or = function
-        Or (_, []) -> raise InvalidTree
-      | Or (_, [a]) -> aux_and a
-      | Or (_, l) -> aux_and @@ f l
-    in aux_or
-
-  (* Extract the solution from the internal representation *)
-  let extract : or_node -> elt Tree.t = tree_conv (List.find is_solved_and)
-
   (* Enumerate possible combinations of descendant AND nodes (only to the next
      level of AND nodes and not beyond) *)
-  let enumerate_paths pred hashmap = 
+  let enumerate_paths =
     List.cartesian_product
     %> List.map List.split
-    %> List.filter pred
     %> List.map (function cs, ns ->
          let c = (List.fold_left (fun a c -> a + c + 1) 0 cs) in
-         max c @@ HashMap.find hashmap ns, ns)
+         c, ns)
     %> List.fold_left H.insert H.empty
 
   let try_solve : t -> t =
-    let rec aux_and tree =
-      match tree with
-      (* Don't continue solving if the tree is marked as solved *)
-        And (Solved, _, _, _) -> raise InvalidTree
-      (* If an And node has no computed descendants, expand to its descendants. *)
-      | And (m, _, n, []) ->
-          let l = N.successors n in
-          let desc =
-            List.mapi (fun i l ->
-              let orNode = List.map (fun (c, n) -> And (Nil, H.empty, n, [])) l in
-              Or (Nil, orNode))
-            l in
-          let h =
-            if List.is_empty l then H.empty
-            else
-              List.cartesian_product l
-                |> List.map (List.split %> Pair.map_fst (List.fold_left (fun a c -> a + c + 1) 0))
-                |> List.fold_left H.insert H.empty in
-          let m' = if List.is_empty l then Solved else m in
-          Some (And (m', h, n, desc))
-      (* We need to call aux_and on every one of and And node's descendants. *)
-      | And (m, h, n, l) ->
-          let open Option in
-          let* _, ns = H.find_min h in
-          let desc = List.map (uncurry aux_or) (List.combine ns l) in
-          (* compile new heap using the costs of the computed descendants. *)
-          let h' =
-            let tbl = HashMap.of_seq (H.to_seq h |> Seq.map Pair.swap) in
-            List.map (function Or (_, l) ->
-              List.map (fun n -> and_cost n, and_elt n) l) desc
-              |> enumerate_paths (snd %> HashMap.mem tbl) tbl in
-          let m' = if List.for_all is_solved_or desc then Solved else m in
-          Some (And (m', h', n, desc))
-    and aux_or chosenNode tree =
-      match tree with
-      (* Don't continue solving if the tree is marked as solved *)
-      (* We do not allow Or nodes with no descendants *)
-        Or (Solved, _) | Or (_, []) -> raise InvalidTree
-      (* If it is an Or node with computed descendants, find the child that
-         matches the current node on the supplied path and expand. *)
-      | Or (m, l) ->
-          let rest = List.filter (not % eq_elt chosenNode) l in
-          let andNode = aux_and @@ List.find (eq_elt chosenNode) l in
-          let branches =
-            (* if a descendant And node no longer has viable descendants, remove
-               it from the tree *)
-            match andNode with
-              None -> rest
-            | Some expanded -> sort_branches and_cost @@ expanded::rest in
-          let pred = Option.(map is_solved_and andNode |> get_or ~default:false) in
-          let m' = if pred then Solved else m in
-          Or (m', branches)
-    in
+    (* let rec aux_and tree = *)
+    (*   match tree with *)
+    (*   (1* Don't continue solving if the tree is marked as solved *1) *)
+    (*     And (Solved, _, _, _) -> raise InvalidTree *)
+    (*   (1* If an And node has no computed descendants, expand to its descendants. *1) *)
+    (*   | And (m, _, n, []) -> *)
+    (*       let l = N.successors n in *)
+    (*       let desc = *)
+    (*         List.mapi (fun i l -> *)
+    (*           let orNode = List.map (fun (c, n) -> And (Nil, H.empty, n, [])) l in *)
+    (*           Or (Nil, orNode)) *)
+    (*         l in *)
+    (*       let h = *)
+    (*         if List.is_empty l then H.empty *)
+    (*         else *)
+    (*           List.cartesian_product l *)
+    (*             |> List.map (List.split %> Pair.map_fst (List.fold_left (fun a c -> a + c + 1) 0)) *)
+    (*             |> List.fold_left H.insert H.empty in *)
+    (*       let m' = if List.is_empty l then Solved else m in *)
+    (*       Some (And (m', h, n, desc)) *)
+    (*   (1* We need to call aux_and on every one of and And node's descendants. *1) *)
+    (*   | And (m, h, n, l) -> *)
+    (*       let open Option in *)
+    (*       let* _, ns = H.find_min h in *)
+    (*       let desc = List.map (uncurry aux_or) (List.combine ns l) in *)
+    (*       (1* compile new heap using the costs of the computed descendants. *1) *)
+    (*       let h' = *)
+    (*         let tbl = HashMap.of_seq (H.to_seq h |> Seq.map Pair.swap) in *)
+    (*         List.map (function Or (_, l) -> *)
+    (*           List.map (fun n -> and_cost n, and_elt n) l) desc *)
+    (*           |> enumerate_paths (snd %> HashMap.mem tbl) tbl in *)
+    (*       let m' = if List.for_all is_solved_or desc then Solved else m in *)
+    (*       Some (And (m', h', n, desc)) *)
+    (* and aux_or chosenNode tree = *)
+    (*   match tree with *)
+    (*   (1* Don't continue solving if the tree is marked as solved *1) *)
+    (*   (1* We do not allow Or nodes with no descendants *1) *)
+    (*     Or (Solved, _) | Or (_, []) -> raise InvalidTree *)
+    (*   (1* If it is an Or node with computed descendants, find the child that *)
+    (*      matches the current node on the supplied path and expand. *1) *)
+    (*   | Or (m, l) -> *)
+    (*       let rest = List.filter (not % eq_elt chosenNode) l in *)
+    (*       let andNode = aux_and @@ List.find (eq_elt chosenNode) l in *)
+    (*       let branches = *)
+    (*         (1* if a descendant And node no longer has viable descendants, remove *)
+    (*            it from the tree *1) *)
+    (*         match andNode with *)
+    (*           None -> rest *)
+    (*         | Some expanded -> sort_branches and_cost @@ expanded::rest in *)
+    (*       let pred = Option.(map is_solved_and andNode |> get_or ~default:false) in *)
+    (*       let m' = if pred then Solved else m in *)
+    (*       Or (m', branches) *)
+    (* in *)
     while_do
       is_solved_or
       (fun t ->
@@ -267,19 +226,19 @@ module Make (N : I) : S with type elt = N.t = struct
             let m' = if is_solved_and n then Solved else m in
             Or (m', n::List.tl l'))
 
-  let run =
-    try_solve
-      %> while_do
-         (N.validate % extract)
-         (fun t ->
-           let t' = remove_previous_sol t in
-           let print_heap = function And (m, h, n, _) ->
-             Format.printf "%a %a\n%a\n\n" mark_pp m N.pp n
-               (H.pp (ppp Int.pp (lpp N.pp))) h in
-           let print_orNode = function Or (_, l) -> List.iter print_heap l in
-           print_orNode t';
-           Format.printf "Next t: %a\n" pp t';
-           Format.print_flush ();
-           try_solve @@ remove_previous_sol t)
-      %> extract
+  (* let run = *)
+  (*   try_solve *)
+  (*     %> while_do *)
+  (*        (N.validate % extract) *)
+  (*        (fun t -> *)
+  (*          (1* let t' = remove_previous_sol t in *1) *)
+  (*          (1* let print_heap = function And (m, h, n, _) -> *1) *)
+  (*          (1*   Format.printf "%a %a\n%a\n\n" mark_pp m N.pp n *1) *)
+  (*          (1*     (H.pp (ppp Int.pp (lpp N.pp))) h in *1) *)
+  (*          (1* let print_orNode = function Or (_, l) -> List.iter print_heap l in *1) *)
+  (*          (1* print_orNode t'; *1) *)
+  (*          (1* Format.printf "Next t: %a\n" pp t'; *1) *)
+  (*          (1* Format.print_flush (); *1) *)
+  (*          try_solve @@ remove_previous_sol t) *)
+  (*     %> extract *)
 end
