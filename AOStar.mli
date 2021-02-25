@@ -21,7 +21,7 @@ module type I = sig
       made of up of the costs and the corresponding node elements. Note:
       successors of elements that are parts of an And node must all be Or nodes.
       *)
-  val successors : t -> (int * t) list list
+  val successors : t -> (int * (int * t) list) list
 
   (** [est_cost t] estimates the cost of element [t] *)
   val est_cost : t -> int
@@ -43,7 +43,7 @@ module type S = sig
   type t
 
   (** [init a] returns a singleton tree in the interal representation *)
-  val init : elt -> t
+  val init : (int * elt) list -> t
 
   (** [try_solve t] expands the branches using the AO* algorithm and finds a
       solution *)
