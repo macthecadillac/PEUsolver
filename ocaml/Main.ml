@@ -5,8 +5,6 @@ module T = struct
   open AOStar
 
   exception ImpossibleBranch
-  exception NotANumber
-  exception NotAList
 
   type nonterm = Sort | Singleton | Slice | Concat | Find
   type term = List | Zero

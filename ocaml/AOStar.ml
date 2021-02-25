@@ -4,13 +4,9 @@ open Containers
 open Fun
 
 module List = struct
-  exception InconsistentLengths
   include List
   let min = function [] -> 0 | hd::tl -> List.fold_left min hd tl
   let sum = List.fold_left (+) 0
-  let combine_opt a b =
-    try Some (combine a b) with
-      Invalid_argument _ -> None
 end
 
 type 'a printer = Format.formatter -> 'a -> unit
