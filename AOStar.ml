@@ -33,7 +33,6 @@ module type I = sig
   type t
   val equal : t -> t -> bool
   val successors : t -> (int * (int * t) list) list
-  val est_cost : t -> int
   val validate : t Tree.t -> bool
   val pp : t printer
 end

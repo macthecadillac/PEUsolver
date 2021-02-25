@@ -23,9 +23,6 @@ module type I = sig
       *)
   val successors : t -> (int * (int * t) list) list
 
-  (** [est_cost t] estimates the cost of element [t] *)
-  val est_cost : t -> int
-
   (** [validate t] validates that t fits the specification *)
   val validate : t Tree.t -> bool
 
