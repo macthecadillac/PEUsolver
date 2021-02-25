@@ -51,7 +51,7 @@ module T = struct
     (* Format.printf "%a\n\nBREAK\n\n" (Tree.pp pp) t; *)
     Format.print_flush ();
     (* let _ = read_line () in *)
-    eval t = 19
+    eval t = 10000
 end
 
 module M = AOStar.Make (T)

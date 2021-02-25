@@ -66,14 +66,6 @@ module Make (N : I) : S with type elt = N.t = struct
   type elt = N.t
   type t = H.t * or_node
 
-  module HashSet = Hashtbl.Make (struct
-    type t = elt Tree.t
-    let hash = Hash.poly
-    let equal a b = hash a = hash b
-  end)
-
-  let hs = HashSet.create 10
-
   let is_solved_and = mark_eq Solved % function And (m, _, _, _) -> m
   let is_solved_or = mark_eq Solved % function Or (m, _, _) -> m
 
@@ -91,7 +83,8 @@ module Make (N : I) : S with type elt = N.t = struct
 
   and or_pp' s fmt = function
     Or (m, c, l) ->
-        Format.fprintf fmt "Or %a %i %a" mark_pp m c (list_pp s and_pp') (Lazy.force l)
+        Format.fprintf fmt "Or %a %i %a" mark_pp m c (list_pp s and_pp')
+    (if Lazy.is_forced l then Lazy.force l else [])
 
   let and_pp = and_pp' ""
   let or_pp = or_pp' ""
@@ -108,7 +101,8 @@ module Make (N : I) : S with type elt = N.t = struct
     (List.pp ~pp_sep:(fun f () -> Format.fprintf f "; ")
              ~pp_start:(fun f () -> Format.fprintf f "[")
              ~pp_stop:(fun f () -> Format.fprintf f "]")
-           and_boring_pp) (Lazy.force l)
+             and_boring_pp)
+    (if Lazy.is_forced l then Lazy.force l else [])
 
   let pp fmt (h, t) =
     Format.fprintf fmt "Heap:\n%a\nTree:\n%a" (H.pp or_boring_pp) h or_pp t
@@ -129,8 +123,6 @@ module Make (N : I) : S with type elt = N.t = struct
   let rec unmark_and (And (_, c, a, l)) = And (Nil, c, a, List.map unmark_or l)
   and unmark_or (Or (_, c, l)) = Or (Nil, c, Lazy.map (List.map unmark_and) l)
 
-  let stop_on_err _ = function Ok x -> Ok x, `Continue | e -> e, `Stop
-
   let sum_desc_costs = List.fold_left (fun acc n -> or_cost n + acc + 1) 0
 
   let rec while_do_result pred f x =
@@ -146,100 +138,92 @@ module Make (N : I) : S with type elt = N.t = struct
     and aux_or (Or (_, _, l)) = aux_and (List.find is_solved_and (Lazy.force l))
     in aux_or t
 
-  let to_tree =
-    let rec aux_and = function
-        And (_, _, n, []) -> Tree.Node (n, [])
-      | And (_, _, n, l) ->
-          let forced = List.filter (function Or (_, _, l) -> Lazy.is_forced l) l in
-          Tree.Node (n, List.map aux_or forced)
-    and aux_or (Or (_, _, l)) =
-      match Lazy.force l with
-        [] -> raise InvalidTree
-      | [a] -> aux_and a
-      | _ -> raise CorruptState
-    in aux_or
-
-  let enumerate_paths =
-    let rec aux_and = function
-        And (_, c, n, []) -> [And (Nil, c, n, [])]
-      | And (_, _, n, l) ->
-          List.map aux_or l
-          |> List.cartesian_product
-          |> List.map (fun l -> And (Nil, sum_desc_costs l, n, l))
-    and aux_or = function
-        Or (_, _, l) when Lazy.is_forced l ->
-          Lazy.force l
-          |> List.concat_map aux_and
-          |> List.map (fun n -> Or (Nil, and_cost n, Lazy.pure [n]))
-      | node -> [node]
-    in aux_or
-
   let try_solve =
     let rec aux_and chosenPath tree =
       match chosenPath, tree with
       (* Don't continue solving if the tree is marked as solved *)
-        _, (And (Solved, _, _, _) as a) -> a
+        _, And (Solved, _, _, _) -> None
       (* If an And node has no computed descendants, expand to its descendants. *)
-      | And (_, _, pn, []), And (m, _, n, []) ->
+      | And (_, _, pn, []), And (m, c, n, []) ->
+          let open List in
           let l = N.successors n in
           let desc =
-            let open List in
             let+ cost, l' = l in
             let orNode () = map (fun (c, n) -> And (Nil, c, n, [])) l' in
             Or (Nil, cost, Lazy.of_thunk orNode) in
-          let c = sum_desc_costs desc in
-          let m' = if List.is_empty l then Solved else m in
-          And (m', c, n, desc)
+          let c' = c + sum_desc_costs desc in
+          let m' = if is_empty l then Solved else m in
+          Some ([And (Nil, c', n, desc)], And (m', c', n, desc))
       (* We need to call aux_and on every one of And node's descendants. *)
-      | And (_, _, pn, pl), And (m, _, n, l) ->
-          let desc = List.combine pl l |> List.map (uncurry aux_or) in
-          let c = sum_desc_costs desc in
-          let m' = if List.for_all is_solved_or desc then Solved else m in
-          And (m', c, n, desc)
-    and aux_or chosenPath tree =
+      | And (_, pc, pn, pl), And (m, c, n, l) ->
+          try
+            let open Option in
+            let* ps, desc =
+              List.combine pl l
+              |> List.map (uncurry aux_or)
+              |> sequence_l
+              |> map List.split in
+            let c' = c + sum_desc_costs desc in
+            let m' = if List.for_all is_solved_or desc then Solved else m in
+            let paths =
+              let open List in
+              let+ branches = List.cartesian_product ps in
+              let cost = pc + sum_desc_costs branches in
+              And (Nil, cost, n, branches) in
+            Some (paths, And (m', c', n, desc))
+          with
+            (* combine fails when pl is empty. Discard the path and continue *)
+            Invalid_argument _ -> None
+    and aux_or chosenPath tree : (or_node list * or_node) option =
       match chosenPath, tree with
       (* Don't continue solving if the tree is marked as solved *)
-        _, (Or (Solved, _, _) as a) -> a
+        _, Or (Solved, _, _) -> None
       (* If it is an Or node with computed descendants, find the child that
          matches the current node on the supplied path and expand. *)
       | Or (_, _, pl), Or (m, _, ll) when Lazy.is_forced pl ->
+          let open Option in
           let pa = match Lazy.force pl with
               [a] -> a
             | _ -> raise CorruptState in
           let l = Lazy.force ll in
           let eq = List.find (and_eq pa) l in
-          let expanded = aux_and pa eq in
+          let* ps, expanded = aux_and pa eq in
           let rest = List.filter (not % and_eq pa) l in
           let branches = expanded::rest in
-          let c = and_cost (List.hd branches) + 1 in
+          let c = and_cost (List.hd branches) + 5 in
           let m' = if is_solved_and expanded then Solved else m in
-          Or (m', c, Lazy.pure branches)
+          let paths =
+            let open List in
+            let+ p = ps in
+            Or (Nil, and_cost p + 1, Lazy.pure [p]) in
+          Some (paths, Or (m', c, Lazy.pure branches))
       (* Descendants have not been enumerated--expand *)
-      | _, Or (m, c, l) -> Or (m, c, Lazy.(return @@ force l))
+      | _, Or (m, c, l) ->
+          let desc = Lazy.force l in
+          let paths =
+            let open List in
+            let+ p = desc in
+            let cost = and_cost p + 1 in
+            Or (Nil, cost, Lazy.return [p]) in
+          Some (paths, Or (m, c, Lazy.return desc))
     in
-    Result.return
+    (function h, t -> Ok ([], h, t))
     %> while_do_result
-       (is_solved_or % snd)
-       (function h, t ->
+       (is_solved_or % function _, _, t -> t)
+       (function l, h, t ->
          let open Result in
-         let+ hp, p =
-           let aux h = H.find_min h |> of_opt |> map (Pair.make h) in
-           while_do_result (not % HashSet.mem hs % to_tree % snd)
-                           (function h, _ -> aux @@ H.delete_min h)
-                           (aux h) in
-         let t' = aux_or p t in
-         let ts = enumerate_paths t' in
-         let h' = List.fold_left H.insert H.empty ts in
-         h', t')
+         let h' = List.fold_left H.insert h l in
+         let+ p = H.find_min h' |> of_opt in
+         match aux_or p (unmark_or t) with
+           None -> [], H.delete_min h', t
+         | Some (paths, t') -> paths, H.delete_min h', t')
+    %> Result.map (function _, h, t -> h, t)
     %> Result.map_err (const SolutionNotFound)
 
   let run =
     try_solve
     %> while_do_result
        (N.validate % extract)
-       (fun s ->
-         let minPath = extract s in
-         HashSet.add hs minPath ();
-         try_solve @@ Pair.map H.delete_min unmark_or s)
+       (try_solve % Pair.map_snd unmark_or)
     %> Result.map extract
 end
