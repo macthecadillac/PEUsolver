@@ -21,7 +21,7 @@ module type I = sig
       made of up of the costs and the corresponding node elements. Note:
       successors of elements that are parts of an And node must all be Or nodes.
       *)
-  val successors : t -> (int * t) list list
+  val successors : t -> (int * (int * t) list) list
 
   (** [validate t] validates that t fits the specification *)
   val validate : t Tree.t -> bool
