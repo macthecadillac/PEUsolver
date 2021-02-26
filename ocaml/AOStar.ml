@@ -2,14 +2,14 @@
     that validates *)
 open Containers
 open Fun
+open Sig
+open Common
 
 module List = struct
   include List
   let min = function [] -> 0 | hd::tl -> List.fold_left min hd tl
   let sum = List.fold_left (+) 0
 end
-
-type 'a printer = Format.formatter -> 'a -> unit
 
 type mark = Nil | Solved
 
@@ -20,28 +20,6 @@ let mark_eq = curry (function
 let mark_pp fmt = function
     Nil -> Format.fprintf fmt "Nil"
   | Solved -> Format.fprintf fmt "Solved"
-
-type error = SolutionNotFound
-
-let error_pp fmt _ = Format.fprintf fmt "SolutionNotFound"
-
-module type I = sig
-  type t
-  val equal : t -> t -> bool
-  val successors : t -> (int * (int * t) list) list
-  val validate : t Tree.t -> bool
-  val pp : t printer
-end
-
-module type S = sig
-  type elt
-  type t
-  val init : (int * elt) list -> t
-  val try_solve : t -> (t, error) result
-  val extract : t -> elt Tree.t
-  val run : t -> (elt Tree.t, error) result
-  val pp : t printer
-end
 
 module Make (N : I) : S with type elt = N.t = struct
 
@@ -69,12 +47,6 @@ module Make (N : I) : S with type elt = N.t = struct
   let is_solved_or = mark_eq Solved % function Or (m, _, _) -> m
 
   (* A bunch of different printers for debugging *)
-  let rec list_pp s pp fmt = function
-      [] -> ()
-    | [a] -> Format.fprintf fmt "\n%s└── %a" s (pp (s ^ "    ")) a
-    | hd::tl -> Format.fprintf fmt "\n%s├── %a" s (pp (s ^ "│   ")) hd;
-                list_pp s pp fmt tl
-
   let rec and_pp' s fmt = function
       And (m, c, n, []) -> Format.fprintf fmt "And %a, %i, %a" mark_pp m c N.pp n
     | And (m, c, n, l) ->
@@ -86,8 +58,6 @@ module Make (N : I) : S with type elt = N.t = struct
 
   let and_pp = and_pp' ""
   let or_pp = or_pp' ""
-
-  let str_pp s fmt () = Format.fprintf fmt s
 
   let list_pp' p =
     List.pp ~pp_sep:(str_pp "; ") ~pp_start:(str_pp "[") ~pp_stop:(str_pp "]") p
@@ -127,12 +97,12 @@ module Make (N : I) : S with type elt = N.t = struct
     if pred y then x
     else while_do_result pred f @@ f y
 
-  let extract (_, t) =
-    let rec aux_and = function
-        And (_, _, n, []) -> Tree.Node (n, [])
-      | And (_, _, n, l) -> Tree.Node (n, List.map aux_or l)
-    and aux_or (Or (_, _, l)) = aux_and (List.find is_solved_and (Lazy.force l))
-    in aux_or t
+  let extract =
+    let aux_or (Or (_, _, l)) = List.find is_solved_and (Lazy.force l) in
+    let aux_and = function
+        And (_, _, n, []) -> n, []
+      | And (_, _, n, l) -> n, List.map aux_or l
+    in Tree.unfold aux_and % aux_or % snd
 
   let try_solve (h, t) =
     let rec aux_and chosenPath tree =
@@ -207,6 +177,8 @@ module Make (N : I) : S with type elt = N.t = struct
          let paths, t' = aux_or p (unmark_or t) in
          paths, H.delete_min h', t')
        (Ok ([], h, t))
+       (* we drop the path list when a solution is found--that's precisely the
+          solution *)
     |> Result.map (function _, h, t -> h, t)
     |> Result.map_err (const SolutionNotFound)
 
