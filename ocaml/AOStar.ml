@@ -1,4 +1,4 @@
-(** A modified AO* Algorithm that continues solving until it finds as solution
+(** A modified AO* Algorithm that continues solving until it finds a solution
     that validates *)
 open Containers
 open Fun
