@@ -6,11 +6,13 @@ module type S = sig
   type elt
   type t
   val empty : t
+  val is_empty : t -> bool
   val find_min : t -> elt option
   val find_min_exn : t -> elt
   val meld : t -> t -> t
   val insert : t -> elt -> t
   val delete_min : t -> t
+  val to_list : t -> elt list
   val pp : elt printer -> t printer
 end
 

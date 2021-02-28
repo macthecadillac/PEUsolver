@@ -74,16 +74,17 @@ module T = struct
     try
       let solution = eval [1; 4; 0; 6] t in
       match solution with
-        L l -> List.equal Int.equal l [1; 4; 1; 4]
+        L l -> List.equal Int.equal l [1; 4]
       | I i -> Printf.printf "%i\n" i; raise ImpossibleBranch
     with
       Invalid_argument _ -> false
 end
 
-module M = AOStar.Make (T)
+module AOS = AOStar.Make (T)
+(* module AS = AStar.Make (T) *)
 
 let () =
-  let solved = M.run @@ M.init T.[1, T List; 10, N Singleton; 20, N Sort; 20, N Slice; 20, N Concat] in
+  let solved = AOS.run @@ AOS.init T.[1, T List; 10, N Singleton; 20, N Sort; 20, N Slice; 20, N Concat] in
   match solved with
     Error e -> Format.printf "Error %a\n" error_pp e
   | Ok t -> Format.printf "Ok %s\n" (T.to_string t)

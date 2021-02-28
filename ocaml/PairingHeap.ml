@@ -11,11 +11,13 @@ module type S = sig
   type elt
   type t
   val empty : t
+  val is_empty : t -> bool
   val find_min : t -> elt option
   val find_min_exn : t -> elt
   val meld : t -> t -> t
   val insert : t -> elt -> t
   val delete_min : t -> t
+  val to_list : t -> elt list
   val pp : elt printer -> t printer
 end
 
@@ -35,6 +37,8 @@ module Make (E : ORDERING) : S
   exception EmptyHeap
 
   let empty = Empty
+
+  let is_empty = function Empty -> true | _ -> false
 
   let find_min = function
       Empty -> None
@@ -61,6 +65,13 @@ module Make (E : ORDERING) : S
   let delete_min = function
       Empty -> Empty
     | Heap (_, subheaps) -> _merge_pairs empty subheaps
+
+  let to_list h =
+    let rec aux acc h =
+      match find_min h with
+        None -> List.rev acc
+      | Some a -> aux (a::acc) (delete_min h)
+    in aux [] h
 
   let pp pp_item =
     let rec list_pp s fmt = function

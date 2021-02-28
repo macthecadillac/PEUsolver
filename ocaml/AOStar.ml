@@ -2,7 +2,8 @@
     that validates *)
 open Containers
 open Fun
-open Common
+
+module C = Common
 
 (* Extend the List module with some handy functions *)
 module List = struct
@@ -78,13 +79,6 @@ module Make (N : Sig.I) : Sig.S with type elt = N.t = struct
   (* Helper function to sum all the costs of descendants with path costs *)
   let sum_desc_costs = List.fold_left (fun acc n -> or_cost n + acc + 1) 0
 
-  (* Helper function that helps with loops *)
-  let rec while_do_result pred f x =
-    let open Result in
-    let* y = x in
-    if pred y then x
-    else while_do_result pred f @@ f y
-
   (* Extract the the result from our internal repr as a Tree.t *)
   let extract =
     let aux_or (Or (_, _, l)) = List.find is_solved_and (Lazy.force l) in
@@ -158,7 +152,7 @@ module Make (N : Sig.I) : Sig.S with type elt = N.t = struct
           let ll' = if Lazy.is_forced ll then ll else Lazy.return desc in
           paths, Or (m, c, ll')
     in
-    while_do_result
+    C.while_do_result
        (is_solved_or % function _, _, t -> t)
        (function l, h, t ->
          let open Result in
@@ -170,12 +164,12 @@ module Make (N : Sig.I) : Sig.S with type elt = N.t = struct
        (* we drop the path list when a solution is found--the list is a
           singleton that contains the solution *)
     |> Result.map (function _, h, t -> h, t)
-    |> Result.map_err (const SolutionNotFound)
+    |> Result.map_err (const C.SolutionNotFound)
 
   (* Repeatedly calls try_solve until a solution validates *)
   let run =
     try_solve
-    %> while_do_result
+    %> C.while_do_result
        (N.validate % extract)
        (try_solve % Pair.map_snd unmark_or)
     %> Result.map extract
@@ -184,17 +178,17 @@ module Make (N : Sig.I) : Sig.S with type elt = N.t = struct
   let rec and_pp' s fmt = function
       And (m, c, n, []) -> Format.fprintf fmt "And %a, %i, %a" mark_pp m c N.pp n
     | And (m, c, n, l) ->
-        Format.fprintf fmt "And %a %i %a %a" mark_pp m c N.pp n (list_pp s or_pp') l
+        Format.fprintf fmt "And %a %i %a %a" mark_pp m c N.pp n (C.list_pp s or_pp') l
 
   and or_pp' s fmt (Or (m, c, l)) =
     let l' = if Lazy.is_forced l then Lazy.force l else [] in
-    Format.fprintf fmt "Or %a %i %a" mark_pp m c (list_pp s and_pp') l'
+    Format.fprintf fmt "Or %a %i %a" mark_pp m c (C.list_pp s and_pp') l'
 
   let and_pp = and_pp' ""
   let or_pp = or_pp' ""
 
   let list_pp' p =
-    List.pp ~pp_sep:(str_pp "; ") ~pp_start:(str_pp "[") ~pp_stop:(str_pp "]") p
+    List.pp ~pp_sep:(C.str_pp "; ") ~pp_start:(C.str_pp "[") ~pp_stop:(C.str_pp "]") p
 
   let rec and_boring_pp fmt (And (m, c, n, l)) =
     Format.fprintf fmt "And %a %i %a %a" mark_pp m c N.pp n (list_pp' or_boring_pp) l
