@@ -53,6 +53,32 @@ module Make (N : Sig.I) : Sig.S with type elt = N.t = struct
 
   let is_solved_or = mark_eq Solved % function Or (m, _, _) -> m
 
+  (* printers for pretty printing *)
+  let rec and_pp' s fmt = function
+      And (m, c, n, []) -> Format.fprintf fmt "And %a, %i, %a" mark_pp m c N.pp n
+    | And (m, c, n, l) ->
+        Format.fprintf fmt "And %a %i %a %a" mark_pp m c N.pp n (C.list_pp s or_pp') l
+
+  and or_pp' s fmt (Or (m, c, l)) =
+    let l' = if Lazy.is_forced l then Lazy.force l else [] in
+    Format.fprintf fmt "Or %a %i %a" mark_pp m c (C.list_pp s and_pp') l'
+
+  let and_pp = and_pp' ""
+  let or_pp = or_pp' ""
+
+  let list_pp' p =
+    List.pp ~pp_sep:(C.str_pp "; ") ~pp_start:(C.str_pp "[") ~pp_stop:(C.str_pp "]") p
+
+  let rec and_boring_pp fmt (And (m, c, n, l)) =
+    Format.fprintf fmt "And %a %i %a %a" mark_pp m c N.pp n (list_pp' or_boring_pp) l
+
+  and or_boring_pp fmt (Or (m, c, l)) =
+    let l' = if Lazy.is_forced l then Lazy.force l else [] in
+    Format.fprintf fmt "Or %a %i %a" mark_pp m c (list_pp' and_boring_pp) l'
+
+  let pp fmt (h, t) =
+    Format.fprintf fmt "Heap:\n%a\nTree:\n%a" (H.pp or_boring_pp) h or_pp t
+
   (* initialize computation *)
   let init l =
     let costs, nodes = List.map (fun (c, n) -> c, And (Nil, c, n, [])) l
@@ -105,12 +131,29 @@ module Make (N : Sig.I) : Sig.S with type elt = N.t = struct
           let l' = if is_empty l then desc else l in
           let m' = if is_empty l' then Solved else m in
           [And (Nil, pc + c', n, desc)], And (m', c + c', n, l')
-      (* We need to call aux_and on every one of And node's descendants. *)
+      (* We need to call aux_or on every one of And node's descendants. *)
       | And (_, pc, pn, pl), And (m, c, n, l) ->
-          let ps, desc =
-            List.combine pl l
-            |> List.map (uncurry aux_or)
-            |> List.split in
+          let lowestCost = List.map or_cost pl |> List.min in
+          let rec f acc = function
+            [] -> [], List.rev acc |> List.split |> snd
+          | (p, n) as head::tail ->
+              let open List in
+              if or_cost p <> lowestCost
+              then f (head::acc) tail
+              else
+                let ps, n' = aux_or p n in
+                let desc = rev_append acc ((p, n')::tail) |> split |> snd in
+                let t = pure % fst <$> tail in
+                let h = pure % fst <$> acc in
+                let paths = rev_append h (ps::t) in
+                paths, desc in
+          let ps, desc = List.combine pl l |> f [] in
+          (* Format.printf "Node: %a\n" N.pp n; *)
+          (* Format.printf "PS LENGTH: %i\n" (List.length ps); *)
+          (* Format.printf "PATHS BEFORE:\n%a\n\n" (list_pp' or_boring_pp) pl; *)
+          (* Format.printf "PATHS AFTER:\n%a\n\n" (list_pp' (list_pp' or_boring_pp)) ps; *)
+          (* Format.print_flush (); *)
+          (* let _ = read_line () in *)
           let c' = c + sum_desc_costs desc in
           let m' = if List.for_all is_solved_or desc then Solved else m in
           let paths =
@@ -119,7 +162,7 @@ module Make (N : Sig.I) : Sig.S with type elt = N.t = struct
             let cost = pc + sum_desc_costs branches in
             And (Nil, cost, n, branches) in
           paths, And (m', c', n, desc)
-    and aux_or chosenPath tree =
+    and aux_or chosenPath tree : or_node list * or_node =
       match chosenPath, tree with
       (* Don't continue solving if the tree is marked as solved *)
         _, Or (Solved, _, _) -> raise InvalidTree
@@ -155,6 +198,7 @@ module Make (N : Sig.I) : Sig.S with type elt = N.t = struct
     C.while_do_result
        (is_solved_or % function _, _, t -> t)
        (function l, h, t ->
+         (* Format.printf "New iter:\n\n"; *)
          let open Result in
          let h' = List.fold_left H.insert h l in
          let+ p = H.find_min h' |> of_opt in
@@ -173,30 +217,4 @@ module Make (N : Sig.I) : Sig.S with type elt = N.t = struct
        (N.validate % extract)
        (try_solve % Pair.map_snd unmark_or)
     %> Result.map extract
-
-  (* printers for pretty printing *)
-  let rec and_pp' s fmt = function
-      And (m, c, n, []) -> Format.fprintf fmt "And %a, %i, %a" mark_pp m c N.pp n
-    | And (m, c, n, l) ->
-        Format.fprintf fmt "And %a %i %a %a" mark_pp m c N.pp n (C.list_pp s or_pp') l
-
-  and or_pp' s fmt (Or (m, c, l)) =
-    let l' = if Lazy.is_forced l then Lazy.force l else [] in
-    Format.fprintf fmt "Or %a %i %a" mark_pp m c (C.list_pp s and_pp') l'
-
-  let and_pp = and_pp' ""
-  let or_pp = or_pp' ""
-
-  let list_pp' p =
-    List.pp ~pp_sep:(C.str_pp "; ") ~pp_start:(C.str_pp "[") ~pp_stop:(C.str_pp "]") p
-
-  let rec and_boring_pp fmt (And (m, c, n, l)) =
-    Format.fprintf fmt "And %a %i %a %a" mark_pp m c N.pp n (list_pp' or_boring_pp) l
-
-  and or_boring_pp fmt (Or (m, c, l)) =
-    let l' = if Lazy.is_forced l then Lazy.force l else [] in
-    Format.fprintf fmt "Or %a %i %a" mark_pp m c (list_pp' and_boring_pp) l'
-
-  let pp fmt (h, t) =
-    Format.fprintf fmt "Heap:\n%a\nTree:\n%a" (H.pp or_boring_pp) h or_pp t
 end
