@@ -11,6 +11,7 @@ module type S = sig
   type elt
   type t
   val empty : t
+  val singleton : elt -> t
   val is_empty : t -> bool
   val find_min : t -> elt option
   val find_min_exn : t -> elt
@@ -18,7 +19,9 @@ module type S = sig
   val insert : t -> elt -> t
   val delete_min : t -> t
   val to_list : t -> elt list
+  val of_list : elt list -> t
   val pp : elt printer -> t printer
+  val pp' : elt printer -> t printer
 end
 
 module type ORDERING = sig
@@ -37,6 +40,8 @@ module Make (E : ORDERING) : S
   exception EmptyHeap
 
   let empty = Empty
+
+  let singleton a = Heap (a, [])
 
   let is_empty = function Empty -> true | _ -> false
 
@@ -73,6 +78,8 @@ module Make (E : ORDERING) : S
       | Some a -> aux (a::acc) (delete_min h)
     in aux [] h
 
+  let of_list = List.fold_left insert empty
+
   let pp pp_item =
     let rec list_pp s fmt = function
         [] -> ()
@@ -83,4 +90,15 @@ module Make (E : ORDERING) : S
         Empty -> ()
       | Heap (a, l) -> Format.fprintf fmt "%a%a" pp_item a (list_pp s) l;
     in node_pp ""
+
+  let rec pp' pp_item fmt = function
+      Empty -> Format.fprintf fmt "Empty"
+    | Heap (a, l) ->
+        let list_pp =
+          List.pp
+            ~pp_start:(fun fmt () -> Format.fprintf fmt "[")
+            ~pp_stop:(fun fmt () -> Format.fprintf fmt "]")
+            ~pp_sep:(fun fmt () -> Format.fprintf fmt "; ")
+            (pp' pp_item)
+        in Format.fprintf fmt "Heap %a %a" pp_item a list_pp l
 end

@@ -21,15 +21,15 @@ module T = struct
     | T Zero, T Zero -> true
     | _ -> false)
 
-  let list_desc = [1, T List; 80, N Sort; 40, N Slice; 20, N Concat; 10, N Singleton]
-  let int_desc = [1, T Zero; 20, N Find]
+  let list_desc = [0, T List; 0, N Sort; 0, N Slice; 0, N Concat; 0, N Singleton]
+  let int_desc = [0, T Zero; 0, N Find]
 
   let successors = function
-      N Sort -> [1, [1, T List; 40, N Slice; 20, N Concat]]
-    | N Singleton -> [1, int_desc]
-    | N Slice -> [1, [1, T List; 80, N Sort; 20, N Concat]; 1, int_desc; 1, int_desc]
-    | N Concat -> [1, [1, T List; 80, N Sort; 40, N Slice; 10, N Singleton]; 1, list_desc]
-    | N Find -> [1, list_desc; 1, int_desc]
+      N Sort -> [0, [0, T List; 0, N Slice; 0, N Concat]]
+    | N Singleton -> [0, int_desc]
+    | N Slice -> [0, [0, T List; 0, N Sort; 0, N Concat]; 0, int_desc; 0, int_desc]
+    | N Concat -> [0, [0, T List; 0, N Sort; 0, N Slice; 0, N Singleton]; 0, list_desc]
+    | N Find -> [0, list_desc; 0, int_desc]
     | T List | T Zero -> []
 
   type ast_type = I of int | L of int list
@@ -84,7 +84,7 @@ module AOS = AOStar.Make (T)
 (* module AS = AStar.Make (T) *)
 
 let () =
-  let solved = AOS.run @@ AOS.init T.[1, T List; 10, N Singleton; 20, N Sort; 20, N Slice; 20, N Concat] in
+  let solved = AOS.run @@ AOS.init T.[0, T List; 0, N Singleton; 0, N Sort; 0, N Slice; 0, N Concat] in
   match solved with
     Error e -> Format.printf "Error %a\n" error_pp e
   | Ok t -> Format.printf "Ok %s\n" (T.to_string t)
