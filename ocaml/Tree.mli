@@ -1,5 +1,5 @@
 (** The tree type *)
-type 'a t
+type 'a t = Node of 'a * 'a t list
 
 (** The printer type *)
 type 'a printer = Format.formatter -> 'a -> unit
@@ -22,6 +22,8 @@ val flatten : 'a t -> 'a list
     Analogous to the [unfold] function in Haskell's [Data.Tree] module in
     [containers] *)
 val unfold : ('a -> 'b * 'a list) -> 'a -> 'b t
+
+val return : 'a -> 'a t
 
 (** A pretty printer that formats everything in one line. *)
 val pp' : 'a printer -> 'a t printer

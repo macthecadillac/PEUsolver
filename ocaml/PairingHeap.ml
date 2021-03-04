@@ -18,6 +18,7 @@ module type S = sig
   val insert : t -> elt -> t
   val delete_min : t -> t
   val to_list : t -> elt list
+  val of_list : elt list -> t
   val pp : elt printer -> t printer
 end
 
@@ -72,6 +73,8 @@ module Make (E : ORDERING) : S
         None -> List.rev acc
       | Some a -> aux (a::acc) (delete_min h)
     in aux [] h
+
+  let of_list = List.fold_left insert empty
 
   let pp pp_item =
     let rec list_pp s fmt = function

@@ -13,6 +13,7 @@ module type S = sig
   val insert : t -> elt -> t
   val delete_min : t -> t
   val to_list : t -> elt list
+  val of_list : elt list -> t
   val pp : elt printer -> t printer
 end
 

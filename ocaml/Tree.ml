@@ -15,6 +15,8 @@ let rec fold' f acc (Node (a, ts)) = List.fold_left (fold' f) (f acc a) ts
 (* preorder *)
 let flatten t = fold' (Fun.flip List.cons) [] t
 
+let return a = Node (a, [])
+
 let rec unfold f seed =
   let a, l = f seed in
   Node (a, (List.map (unfold f) l))
