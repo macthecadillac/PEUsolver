@@ -1,3 +1,3 @@
-module Make (N : Sig.I) : Sig.S = struct
-  (* type node = Node of *) 
-end
+(* module Make (N : Sig.I) : Sig.S = struct *)
+(*   (1* type node = Node of *1) *) 
+(* end *)
