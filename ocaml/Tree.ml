@@ -32,7 +32,6 @@ let rec pp' pp_item fmt = function
           (pp' pp_item)
       in Format.fprintf fmt "Node %a %a" pp_item a list_pp l
 
-
 let pp pp_item =
   let rec list_pp s fmt = function
       [] -> ()

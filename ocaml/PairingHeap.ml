@@ -11,6 +11,7 @@ module type S = sig
   type elt
   type t
   val empty : t
+  val singleton : elt -> t
   val is_empty : t -> bool
   val find_min : t -> elt option
   val find_min_exn : t -> elt
@@ -38,6 +39,8 @@ module Make (E : ORDERING) : S
   exception EmptyHeap
 
   let empty = Empty
+
+  let singleton a = Heap (a, [])
 
   let is_empty = function Empty -> true | _ -> false
 

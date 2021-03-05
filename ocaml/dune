@@ -1,4 +1,4 @@
 (executable
   (name main)
-  (modules Main AStar Common Lazy PairingHeap Sig Tree)
+  (modules Main AStar PairingHeap Tree)
   (libraries containers))
