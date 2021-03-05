@@ -1,0 +1,34 @@
+{
+  "euphony_path": "benchmarks/string/train/dr-name.sl",
+  "pcfg": {
+    "ntString": {
+      "name": 0.05,
+      " ": 0.05,
+      ".": 0.05,
+      "Dr.": 0.05,
+      "str.++": 0.3,
+      "str.replace": 0.1,
+      "str.at": 0.1,
+      "int.to.str": 0.1,
+      "str.substr": 0.2
+    },
+    "ntInt": {
+      "0": 0.1,
+      "1": 0.1,
+      "2": 0.1,
+      "+": 0.1,
+      "-": 0.1,
+      "str.len": 0.2,
+      "str.to.int": 0.1,
+      "str.indexof": 0.2
+    },
+    "ntBool": {
+      "true": 0.1,
+      "false": 0.1,
+      "=": 0.2,
+      "str.prefixof": 0.2,
+      "str.suffixof": 0.2,
+      "str.contains": 0.2
+    }
+  }
+}
