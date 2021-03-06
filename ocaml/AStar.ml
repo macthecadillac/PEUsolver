@@ -1,16 +1,16 @@
 open Containers
 open Fun
 
-module type GRAMMAR = sig
-  type t
-  val init : t list
-  val is_hole : t -> bool
-  val successors : t -> t list
-  val ast_cost : t Tree.t -> int
-  val ast_to_string : t Tree.t -> string
+module type ENV = sig
+  val grammar : Grammar.t list Grammar.Map.t
+  val pcfg : float Grammar.Map.t
 end
 
-module AS (G : GRAMMAR) = struct
+module type S = sig
+  val sequence : Grammar.t Tree.t Seq.t
+end
+
+module Make (E : ENV) : S = struct
   module Paths = PairingHeap.Make (struct
     type t = int list
     let rec compare a b =
@@ -21,26 +21,23 @@ module AS (G : GRAMMAR) = struct
   end)
 
   module rec T : PairingHeap.ORDERING
-    with type t = Paths.t * G.t Tree.t = struct
-    type t = Paths.t * G.t Tree.t
-    let cost = G.ast_cost % snd
-    let compare a b = Int.compare (cost a) (cost b)
+    with type t = float * Paths.t * Grammar.t Tree.t = struct
+    type t = float * Paths.t * Grammar.t Tree.t
+    let compare (a, _, _) (b, _, _) = Float.compare a b
   end
 
   and H : PairingHeap.S with type elt = T.t = PairingHeap.Make (T)
 
-  type t = T.t
+  let is_ground (_, ps, _) = Paths.is_empty ps
 
-  let init = List.map (fun s -> Paths.singleton [0], Tree.return s) G.init
+  let successors = Option.get_exn % flip Grammar.Map.get E.grammar
 
-  let is_ground = Paths.is_empty % fst
+  let init = successors Grammar.init
 
-  let to_string = G.ast_to_string % snd
-
-  let unroll (h, t) =
+  let unroll (_, h, t) =
     let open List in
     let expand s =
-      let l = G.successors s in
+      let l = successors s in
       pure <$> (0 --^ length l), Tree.Node (s, Tree.return <$> l) in
     let rec go acc i n p = function
         [] -> raise (Invalid_argument "Index out of bounds")
@@ -50,7 +47,7 @@ module AS (G : GRAMMAR) = struct
           cons i <$> p', rev_append acc (n::t')
     and aux p t =
       match p, t with
-        [], Tree.Node (a, []) when G.is_hole a -> expand <$> G.successors a
+        [], Tree.Node (a, []) when Grammar.is_hole E.grammar a -> expand <$> successors a
       | [], Tree.Node (a, []) -> [expand a]
       | i::t, Tree.Node (a, l) -> let+ ps, ts = go [] i 0 t l in ps, Tree.Node (a, ts)
       | _ -> raise (Invalid_argument "Inconsistent path/tree") in
@@ -58,7 +55,7 @@ module AS (G : GRAMMAR) = struct
     let+ ps, t' =
       let+ ps, t' = aux path t in
       cons 0 <$> ps, t' in
-    List.fold_left Paths.insert (Paths.delete_min h) ps, t'
+    Grammar.ast_cost E.pcfg t', fold_left Paths.insert (Paths.delete_min h) ps, t'
 
   let rec enumerate h =
     let open Option in
@@ -70,6 +67,9 @@ module AS (G : GRAMMAR) = struct
       enumerate h'
 
   let sequence =
-    let h = H.of_list init in
-    Seq.unfold enumerate h |> Seq.map snd
+    let cost s = Grammar.ast_cost E.pcfg (Tree.return s) in
+    List.map (fun s -> cost s, Paths.singleton [0], Tree.return s) init
+    |> H.of_list
+    |> Seq.unfold enumerate
+    |> Seq.map (function _, _, t -> t)
 end
