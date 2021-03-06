@@ -1,5 +1,10 @@
+module type PATHORDER = sig
+  type t = (int * Grammar.t) list
+  val compare : t -> t -> int
+end
+
 module type ENV = sig
-  val grammar : Grammar.t list Grammar.Map.t
+  val successorsMap : Grammar.t list Grammar.Map.t
   val pcfg : float Grammar.Map.t
 end
 
@@ -8,4 +13,4 @@ module type S = sig
   val sequence : Grammar.t Tree.t Seq.t
 end
 
-module Make (E : ENV) : S
+module Make (E : ENV) (O : PATHORDER) : S

@@ -1,4 +1,4 @@
 (executable
   (name main)
-  (modules Main AStar Grammar PairingHeap PCFG Tree)
+  (modules Main Grammar PairingHeap PCFG Search SearchOrder Tree)
   (libraries bos containers yojson))

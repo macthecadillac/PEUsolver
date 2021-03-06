@@ -2,6 +2,10 @@ open Containers
 
 type t
 
+val pp : Format.formatter -> t -> unit
+
+val equal : t -> t -> bool
+
 val of_string : string -> t
 
 val compare : t -> t -> int
@@ -14,7 +18,7 @@ val parse_spec : string -> (Sexp.t list, [`Msg of string]) result
 
 val build_succession_map : Sexp.t -> t list Map.t -> (t list Map.t, [`Msg of string]) result
 
-val grammar : Sexp.t list -> (Sexp.t list, [`Msg of string]) result
+val filter_grammar_spec : Sexp.t list -> (Sexp.t list, [`Msg of string]) result
 
 val is_hole : t list Map.t -> t -> bool
 

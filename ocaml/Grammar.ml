@@ -4,6 +4,10 @@ open Bos.OS
 
 type t = string
 
+let pp = String.pp
+
+let equal = String.equal
+
 let compare = String.compare
 
 let of_string a = a
@@ -57,7 +61,7 @@ let build_succession_map a tm =
       terms
   | _ -> Error (`Msg "Malformed spec")
                           
-let grammar (spec : Sexp.t list) =
+let filter_grammar_spec (spec : Sexp.t list) =
   let open Result in
   let filter_fun_def = function `List (`Atom "synth-fun"::_) -> true | _ -> false in
   let* l = List.filter filter_fun_def spec |> List.hd |> sexp_list in
