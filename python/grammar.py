@@ -29,7 +29,8 @@ class Grammar:
 class Program:
     def __init__(self, start_node):
         self.root = start_node
-        self.nonterminals = [self.root.children[0]]
+        self.root_nt = self.root.children[0]
+        self.nonterminals = [self.root_nt]
 
     def __lt__(self, other):
         return False

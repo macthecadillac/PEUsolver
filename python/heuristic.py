@@ -3,36 +3,30 @@ import json
 import math
 
 class Heuristic:
-    def estimate_cost(self, program):
+    def get_rule_cost(self, rule):
         pass
 
-    def estimate_production_cost(self, nonterminal, rhs):
-        pass
-
-    def estimate_nonterminal_cost(self, nonterminal):
+    def estimate_nt_cost(self, nt_node):
         pass
 
 class NoneHeuristic(Heuristic):
-    def estimate_cost(self, program):
-        return 0
-
-    def estimate_rule_cost(self, rule):
+    def get_rule_cost(self, rule):
         return 1
 
-    def estimate_nonterminal_cost(self, nonterminal):
+    def estimate_nt_cost(self, nt_node):
         return 0
 
 class PCFGHeuristic(Heuristic):
     @classmethod
-    def from_json(cls, json_path):
+    def from_json(cls, json_path, grammar):
         with open(json_path, 'r') as f:
             pcfg = json.load(f)['pcfg']
-        return cls(pcfg)
+        return cls(pcfg, grammar)
 
-    def __init__(self, p_table):
+    def __init__(self, p_table, grammar):
         self.p_table = p_table
 
-    def init_heuristics(self, grammar):
+        # Initial computation of nonterminal heuristics
         h_table = {}
         for nt_symbol in grammar.rules.keys():
             h_table[nt_symbol] = 0
@@ -49,9 +43,9 @@ class PCFGHeuristic(Heuristic):
             h_table = h_table_new
         self.h_table = h_table
 
-    def estimate_rule_cost(self, rule):
+    def get_rule_cost(self, rule):
         p = self.p_table[rule.nt_symbol][rule.term_node.symbol]
         return -math.log2(p)
 
-    def estimate_nonterminal_cost(self, nt_node):
+    def estimate_nt_cost(self, nt_node):
         return self.h_table[nt_node.symbol]
