@@ -7,14 +7,14 @@ class BestFirstEnumerator:
         self.heuristic = heuristic
         self.working_list = queue.PriorityQueue()
         program = copy.deepcopy(self.grammar.start)
-        cost = self.heuristic.estimate_cost(program)
+        cost = self.heuristic.estimate_nonterminal_cost(program.root.children[0])
         self.working_list.put((cost, program))
 
     def enumerate(self):
         while not self.working_list.empty():
             cost, program = self.working_list.get()
             if program.is_ground():
-                yield program
+                yield cost, program
                 continue
             for new_cost, new_program in self.unroll(program, cost):
                 self.working_list.put((new_cost, new_program))
