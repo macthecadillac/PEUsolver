@@ -1,0 +1,1 @@
+(define-fun f ((_arg_0 String)) String (str.substr _arg_0 0 (str.indexof _arg_0 " " (str.len (str.++ "," "LLC")))))

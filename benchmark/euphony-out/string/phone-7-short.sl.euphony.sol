@@ -1,0 +1,1 @@
+(define-fun f ((name String)) String (str.substr name (+ (str.indexof name "-" 0) 1) 3))

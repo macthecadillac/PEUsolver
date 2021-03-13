@@ -1,0 +1,1 @@
+(define-fun f ((_arg_0 String) (_arg_1 String)) String (str.substr _arg_1 (+ (str.indexof _arg_1 "_" 0) 1) (str.len _arg_1)))
