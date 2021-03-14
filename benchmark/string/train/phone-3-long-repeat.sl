@@ -425,4 +425,4 @@
 (constraint (= (f "566-086-726") "(566) 086-726"))
 
 (check-synth)
-(define-fun f_1 ((_arg_0 String)) String (str.++ "(" (str.replace name "-" (str.++ ")" " "))))
+(define-fun f_1 ((_arg_0 String)) String (str.++ "(" (str.replace _arg_0 "-" (str.++ ")" " "))))

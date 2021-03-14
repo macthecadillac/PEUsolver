@@ -74,4 +74,4 @@
 (constraint (= (f "Jenee Pannell") "Dr. Jenee"))
 
 (check-synth)
-(define-fun f_1 ((_arg_0 String)) String (str.++ (str.substr "Dr." 0 2) (str.++ "." (str.++ " " (str.substr name 0 (str.indexof name " " 0))))))
+(define-fun f_1 ((_arg_0 String)) String (str.++ (str.substr "Dr." 0 2) (str.++ "." (str.++ " " (str.substr _arg_0 0 (str.indexof _arg_0 " " 0))))))

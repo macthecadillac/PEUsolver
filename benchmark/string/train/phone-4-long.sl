@@ -125,4 +125,4 @@
 (constraint (= (f "566-086-726") "566.086.726"))
 
 (check-synth)
-(define-fun f_1 ((_arg_0 String)) String (str.replace (str.replace name "-" ".") "-" "."))
+(define-fun f_1 ((_arg_0 String)) String (str.replace (str.replace _arg_0 "-" ".") "-" "."))
