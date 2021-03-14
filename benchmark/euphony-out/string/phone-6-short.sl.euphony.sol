@@ -1,1 +1,1 @@
-(define-fun f ((name String)) String (str.substr name (+ (str.indexof name " " 0) 1) 3))
+(define-fun f ((_arg_0 String)) String (str.substr _arg_0 (+ (str.indexof _arg_0 " " 0) 1) 3))
