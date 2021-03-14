@@ -1,9 +1,9 @@
 from itertools import islice
 
-import sexp
-from enumerator import BestFirstEnumerator
-from grammar import Grammar
-from heuristic import PCFGHeuristic
+import src.sexp as sexp
+from src.enumerator import BestFirstEnumerator
+from src.grammar import Grammar
+from src.heuristic import PCFGHeuristic
 
 if __name__ == '__main__':
     sygus_file = '../benchmark/string/train/dr-name.sl'
