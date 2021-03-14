@@ -1,14 +1,14 @@
 Example:
 ```bash
-$ python test.py
-x
-sort(x)
-[0]
-sort([0])
-sort(sort(x))
-x + x
-[0] + x
-sort(x + x)
-[find(x, 0)]
-x + [0]
+$ python test-pcfg.py
+4.321928094887363 "."
+4.321928094887363 " "
+4.321928094887363 "Dr."
+4.321928094887363 "name"
+6.643856189774724 (int.to.str "2")
+6.643856189774724 (int.to.str "0")
+6.643856189774724 (int.to.str "1")
+9.965784284662087 (int.to.str (str.len "."))
+9.965784284662087 (int.to.str (str.len " "))
+9.965784284662087 (int.to.str (str.len "Dr."))
 ```
