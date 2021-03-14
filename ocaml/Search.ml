@@ -1,6 +1,8 @@
 open Containers
 open Fun
 
+type 'a printer = Format.formatter -> 'a -> unit
+
 module type PATHORDER = sig
   type t = (int * Grammar.t) list
   val compare : t -> t -> int
@@ -8,7 +10,8 @@ end
 
 module type ENV = sig
   val successorsMap : Grammar.t list Grammar.Map.t
-  val pcfg : float Grammar.Map.t
+  val tcond_program : TCOND.p
+  val prob : [`PHOG of PHOG.t | `PCFG of PCFG.t]
 end
 
 module type S = sig
@@ -18,10 +21,14 @@ end
 module Make (E : ENV) (O : PATHORDER) : S = struct
   module Paths = PairingHeap.Make (O)
 
-  module rec T : PairingHeap.ORDERING
-    with type t = float * Paths.t * Grammar.t Tree.t = struct
+  module rec T : sig
+    include PairingHeap.ORDERING with type t = float * Paths.t * Grammar.t Tree.t
+    val pp : t printer
+  end = struct
     type t = float * Paths.t * Grammar.t Tree.t
     let compare (a, _, _) (b, _, _) = Float.compare a b
+    let pp fmt (f, p, t) =
+      Format.fprintf fmt "Cost: %f AST: %a" f Grammar.ast_pp t
   end
 
   and H : PairingHeap.S with type elt = T.t = PairingHeap.Make (T)
@@ -31,6 +38,14 @@ module Make (E : ENV) (O : PATHORDER) : S = struct
   let successors = Option.get_exn % flip Grammar.Map.get E.successorsMap
 
   let init = successors Grammar.init
+
+  let ast_cost ast =
+    match E.prob with
+      `PCFG pcfg -> PCFG.ast_cost pcfg ast
+    | `PHOG phog ->
+        let loc = [] in  (* FIXME: certainly wrong *)
+        let _, context = TCOND.apply loc ast E.tcond_program in
+        PHOG.ast_cost phog context ast
 
   let unroll (_, h, t) =
     let open List in
@@ -54,7 +69,7 @@ module Make (E : ENV) (O : PATHORDER) : S = struct
     let+ ps, t' =
       let+ ps, t' = aux pathTl t in
       cons (hd path) <$> ps, t' in
-    Grammar.ast_cost E.pcfg t', fold_left Paths.insert (Paths.delete_min h) ps, t'
+    ast_cost t', fold_left Paths.insert (Paths.delete_min h) ps, t'
 
   let rec enumerate h =
     let open Option in
@@ -66,7 +81,7 @@ module Make (E : ENV) (O : PATHORDER) : S = struct
       enumerate h'
 
   let sequence =
-    let cost s = Grammar.ast_cost E.pcfg (Tree.return s) in
+    let cost s = ast_cost (Tree.return s) in
     List.map (fun s -> cost s, Paths.singleton [0, s], Tree.return s) init
     |> H.of_list
     |> Seq.unfold enumerate

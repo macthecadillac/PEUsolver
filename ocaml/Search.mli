@@ -5,7 +5,8 @@ end
 
 module type ENV = sig
   val successorsMap : Grammar.t list Grammar.Map.t
-  val pcfg : float Grammar.Map.t
+  val tcond_program : TCOND.p
+  val prob : [`PHOG of PHOG.t | `PCFG of PCFG.t]
 end
 
 module type S = sig

@@ -1,4 +1,4 @@
 (executable
   (name main)
-  (modules Main Grammar PairingHeap PCFG Search SearchOrder Tree)
-  (libraries bos containers yojson))
+  (modules Main Grammar JSON PairingHeap PCFG PHOG Search SearchOrder TCOND Tree)
+  (libraries bos cmdliner containers yojson))

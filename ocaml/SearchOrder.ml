@@ -1,13 +1,6 @@
 open Containers
 open Fun
 
-module List = struct
-  include List
-  let min_by cmp = function
-      [] -> raise (Invalid_argument "List.min_by")
-    | hd::tl -> fold_left (fun a b -> if cmp a b > 0 then b else a) hd tl
-end
-
 module AStar = struct
   type t = (int * Grammar.t) list
   let rec compare a b =
@@ -20,14 +13,25 @@ end
 module FAStar (E : Search.ENV) = struct
   type t = (int * Grammar.t) list
   let rec compare a b =
-    (* This happens when s is a hole. We look for the available non-terminals
-       that fills this hole and find the min cost *)
-    let aux s =
-      Grammar.Map.get s E.successorsMap
-      |> Option.get_exn
-      |> List.map (fun a -> Grammar.Map.get a E.pcfg |> Option.get_exn)
-      |> List.min_by Float.compare in
-    let term_cost s = Option.fold (fun _ _ -> aux s) 0. (Grammar.Map.get s E.pcfg) in
-    let cost = List.map (term_cost % snd) %> List.fold_left (+.) 0. in
+    let cost l =
+      let f s =
+        if Grammar.is_hole E.successorsMap s
+        then 0.  (* holes have zero cost *)
+        else
+          match E.prob with
+            `PCFG pcfg -> PCFG.rule_cost pcfg s
+          | `PHOG phog ->  (* FIXME: not sure if this is correct *)
+              let ast =
+                match List.rev l with
+                  [] -> raise (Invalid_argument "Nill path")
+                | (_, n)::tl ->
+                    List.fold_left
+                    (fun acc (_, r) -> Tree.Node (r, [acc]))
+                    (Tree.Node (n, []))
+                    tl in
+              let loc = List.replicate (List.length l - 1) TCOND.(M DownFirst) in
+              let _, context = TCOND.apply loc ast E.tcond_program in
+              PHOG.ast_cost phog context ast in
+      List.map (f % snd) l |> List.fold_left (+.) 0. in
     Float.compare (cost b) (cost a)
 end
