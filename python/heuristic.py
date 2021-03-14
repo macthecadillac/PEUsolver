@@ -1,6 +1,7 @@
 import copy
 import json
 import math
+import pprint
 
 class Heuristic:
     def get_rule_cost(self, rule):
@@ -20,11 +21,29 @@ class PCFGHeuristic(Heuristic):
     @classmethod
     def from_json(cls, json_path, grammar):
         with open(json_path, 'r') as f:
-            pcfg = json.load(f)['pcfg']
+            pcfg = json.load(f)['word-count']
         return cls(pcfg, grammar)
 
     def __init__(self, p_table, grammar):
-        self.p_table = p_table
+        print('Initializing PCFG')
+
+        # Trim p_table to be grammar specific
+        new_p_table = {}
+        for nt_symbol in grammar.rules.keys():
+            counter = {}
+            total_count = 0
+            for rule in grammar.rules[nt_symbol]:
+                symbol = rule.term_node.symbol
+                counter[symbol] = p_table[nt_symbol].get(symbol, 1)
+                total_count += counter[symbol]
+            for rule in grammar.rules[nt_symbol]:
+                counter[rule.term_node.symbol] /= total_count
+            new_p_table[nt_symbol] = counter
+        self.p_table = new_p_table
+        print()
+        print('probability table:')
+        pprint.pp(self.p_table)
+        print()
 
         # Initial computation of nonterminal heuristics
         h_table = {}
@@ -42,6 +61,10 @@ class PCFGHeuristic(Heuristic):
                 break
             h_table = h_table_new
         self.h_table = h_table
+        print()
+        print('heuristic table:')
+        pprint.pp(self.h_table)
+        print()
 
     def get_rule_cost(self, rule):
         p = self.p_table[rule.nt_symbol][rule.term_node.symbol]

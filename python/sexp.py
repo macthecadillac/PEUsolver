@@ -31,15 +31,13 @@ def loads(s, multiple=True):
             tmpout, out = out, stack.pop(-1)
             out.append(tmpout)
         elif term == 'num':
-            v = float(value)
-            if v.is_integer(): v = int(v)
-            out.append(v)
+            out.append(value)
         elif term == 'sq':
-            out.append(value[1:-1])
+            out.append(value)
         elif term == 's':
             out.append(value)
         else:
-            raise NotImplementedError("Error: %r" % (term, value))
+            raise NotImplementedError(f"Error: ({term}, {value})")
     assert not stack, "Trouble with nesting of brackets"
     if multiple:
         return out
