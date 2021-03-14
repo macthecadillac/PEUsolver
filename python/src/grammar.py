@@ -3,20 +3,7 @@ import copy
 class Grammar:
     @classmethod
     def from_sygus(cls, sexp):
-        sexp_synth = sexp[1]
-
-        # Convert arg name
-        sexp_args = sexp_synth[2]
-        arg_name_map = {}
-        for sexp_arg in sexp_args:
-            arg_name, arg_sort = sexp_arg
-            if arg_sort == 'String':
-                arg_symbol = f'str.{arg_name}'
-            elif arg_sort == 'Int':
-                arg_symbol = f'int.{arg_name}'
-            arg_name_map[arg_name] = arg_symbol
-
-        sexp_cfg = sexp_synth[4]
+        sexp_cfg = sexp[1][4]
         sexp_start = sexp_cfg[0]
         _, start_sort, (start_symbol,) = sexp_start
         start = Program(NodeStart(start_symbol, start_sort))
@@ -30,8 +17,6 @@ class Grammar:
                     term_node = NodeFun(symbol, rule_sort, arg_symbols)
                 else:
                     symbol = sexp_term
-                    if symbol in arg_name_map:
-                        symbol = arg_name_map[symbol]
                     term_node = NodeVar(symbol, rule_sort)
                 rule = Rule(nt_symbol, rule_sort, term_node)
                 rules[nt_symbol].append(rule)
