@@ -4,8 +4,9 @@ open Cmdliner
 
 let baseDir = "/home/mac/Documents/code/cse291/"
 
-type search_order = AS | FAS
-type cmd = RunPCFG | TrainPHOG | RunPHOG | PrintHelp
+type cmd = EnumPCFG | TrainPHOG | TrainPCFG | EnumPHOG | PrintHelp
+type mode = PCFG | PHOG
+type order = AS | FAS
 
 let error_pp fmt (`Msg s) = Format.fprintf fmt "%s" s
 
@@ -13,61 +14,87 @@ let print_result =
   let pp fmt = Result.iter_err (Format.fprintf fmt "%a\n" error_pp) in
   Format.printf "%a\n" pp
 
-let make_struct successorsMap tcond_program prob = (module struct
-  let successorsMap = successorsMap
-  let tcond_program = tcond_program
-  let prob = prob
-end : Search.ENV)
+module type E = sig
+  val name : string
+  val tcondP : TCOND.p
+end
 
-let run_pcfg () =
-  let open Result in
-  let result =
-    let specDir = baseDir ^ "euphony/benchmarks/string/train/dr-name.sl" in
-    let* fullSpec = Grammar.parse_spec specDir in
-    let* ntMap = Grammar.rule_nttype_map fullSpec in
-    let* json = JSON.parse @@ baseDir ^ "benchmark/pcfg.json" in
-    let* pcfg_raw = PCFG.decode json in
-    let pcfg = PCFG.compile ntMap pcfg_raw in
-    let+ successorsMap = Grammar.succession_map fullSpec in
-    let (module E) = make_struct successorsMap [] @@ `PCFG pcfg in
-    let (module O) = (module SearchOrder.FAStar (E) : Search.PATHORDER) in
-    let (module S) = (module Search.Make (E) (SearchOrder.AStar) : Search.S) in
-    S.sequence
-    |> Seq.map (fun s -> PCFG.ast_cost pcfg s, s)
-    |> Seq.take 200
-    |> Seq.iter (fun (a, b) -> Format.printf "%f\t%a\n" a Grammar.ast_pp b) in
-  print_result result
+module type R = sig val run : int -> order -> unit end
 
-let train_phog () =
-  let open Result in
-  let p = TCOND.[M Left; W WriteValue; M Up; W WriteValue] in
-  let result =
-    let* path = Fpath.of_string @@ baseDir ^ "euphony/benchmarks/string/train" in
-    let* rawSpecs = List.map Fpath.to_string <$> Bos.OS.Dir.contents path in
-    let* fullSpecs = List.map Grammar.parse_spec rawSpecs |> flatten_l in
-    let* ntMaps = List.map Grammar.rule_nttype_map fullSpecs |> flatten_l in
-    let* ntMap =
-      List.fold_left
-      (fun acc m -> acc >>= Grammar.merge_rule_nttype_maps m)
-      (Ok Grammar.Map.empty) ntMaps in
-    let* asts = List.map Grammar.build_solution_ast fullSpecs |> flatten_l in
-    Format.printf "ntMap:\n%a\n" (Grammar.Map.pp Grammar.pp Grammar.pp) ntMap;
-    let phog_raw = PHOG.train ntMap p asts in
-    let phog_json = PHOG.encode phog_raw in
-    let+ _ = JSON.save phog_json @@ baseDir ^ "benchmark/phog.json" in
-    let phog = PHOG.compile ntMap phog_raw in
-    Format.printf "%a\n" PHOG.pp phog;
-    in
-  print_result result
+module Enumerate (P : Sig.P) (Env : E) : R = struct
+  let make_struct successorsMap ast_cost = (module struct
+    let successorsMap = successorsMap
+    let ast_cost = ast_cost
+  end : Search.ENV)
 
-let exe = function
-    RunPCFG -> run_pcfg ()
-  | TrainPHOG -> train_phog ()
+  let run n order =
+    let open Result in
+    let result =
+      let specDir = baseDir ^ "benchmark/string/train/dr-name.sl" in
+      let* fullSpec = Grammar.parse_spec specDir in
+      let* successorsMap = Grammar.succession_map fullSpec in
+      let* ntMap = Grammar.rule_nttype_map fullSpec in
+      let* json = JSON.parse @@ Printf.sprintf "%sbenchmark/%s.json" baseDir Env.name in
+      let+ p_raw = P.decode json in
+      let p = P.compile ntMap p_raw in
+      let ast_cost = P.ast_cost p Env.tcondP in
+      let env = make_struct successorsMap ast_cost in
+      let orderM =
+        match order with
+          AS -> (module SearchOrder.AStar : Search.PATHORDER)
+        | FAS -> (module SearchOrder.FAStar (val env) : Search.PATHORDER) in
+      let (module S) = (module Search.Make (val env) (val orderM) : Search.S) in
+      S.sequence
+      |> Seq.map (fun s -> ast_cost s, s)
+      |> Seq.take n
+      |> Seq.iter (fun (a, b) -> Format.printf "%f\t%a\n" a Grammar.ast_pp b) in
+    print_result result
+end
+
+module type T = sig val run : unit -> unit end
+
+module Train (P : Sig.P) (Env: E) : T = struct
+  let run () =
+    let open Result in
+    let result =
+      let* path = Fpath.of_string @@ baseDir ^ "benchmark/string/train" in
+      let* rawSpecs = List.map Fpath.to_string <$> Bos.OS.Dir.contents path in
+      let* specs = List.map Grammar.parse_spec rawSpecs |> flatten_l in
+      let* ntMaps = List.map Grammar.rule_nttype_map specs |> flatten_l in
+      let* ntMap =
+        List.fold_left
+        (fun acc m -> acc >>= Grammar.merge_rule_nttype_maps m)
+        (Ok Grammar.Map.empty) ntMaps in
+      let* asts = List.map (Grammar.build_solution_ast ntMap) specs |> flatten_l in
+      let raw = P.train ntMap Env.tcondP asts in
+      let json = P.encode raw in
+      JSON.save json @@ Printf.sprintf "%sbenchmark/%s.json" baseDir Env.name in
+    print_result result
+end
+
+let exe n order = function
+    EnumPCFG ->
+      let env = (module struct let tcondP = [] let name = "pcfg" end : E) in
+      let (module E) = (module Enumerate (PCFG) (val env) : R) in
+      E.run n order
+  | EnumPHOG ->
+      let p = TCOND.[M Right; W WriteValue; M Up; W WriteValue] in
+      let env = (module struct let tcondP = p let name = "phog" end : E) in
+      let (module E) = (module Enumerate (PHOG) (val env) : R) in
+      E.run n order
+  | TrainPCFG ->
+      let env = (module struct let tcondP = [] let name = "pcfg" end : E) in
+      let (module T) = (module Train (PCFG) (val env) : T) in
+      T.run ()
+  | TrainPHOG ->
+      let p = TCOND.[M Right; W WriteValue; M Up; W WriteValue] in
+      let env = (module struct let tcondP = p let name = "phog" end : E) in
+      let (module T) = (module Train (PHOG) (val env) : T) in
+      T.run ()
   | PrintHelp ->
       let msg = "A required argument is missing. "
         ^ "See the help page for more information." in
       print_endline msg
-  | _ -> ()
 
 let man = [
   `S Manpage.s_arguments;
@@ -80,10 +107,20 @@ let info =
   let doc = "A proof-of-concept implementation of A* and FA* with PCFG and PHOG." in
   Term.info "search" ~doc ~man
 
-let run =
-  let cmds = ["train-phog", TrainPHOG; "run-pcfg", RunPCFG; "run-phog", RunPHOG] in
+let nEnum =
+  let doc = "How many sentential forms should the program enumerate." in
+  Arg.(value @@ opt int 20 @@ info ["n"; "enum"] ~doc)
+
+let order =
+  let doc = "Choose between `astar' and `fastar'." in
+  let var = ["astar", AS; "fastar", FAS] in
+  Arg.(value @@ opt (enum var) AS @@ info ["o"; "order"] ~doc)
+
+let runMode =
+  let cmds = ["train-phog", TrainPHOG; "train-pcfg", TrainPCFG;
+              "enum-pcfg", EnumPCFG; "enum-phog", EnumPHOG] in
   Arg.(value @@ pos 0 (enum cmds) PrintHelp @@ info [])
 
 let () =
-  let main = Term.(const exe $ run) in
+  let main = Term.(const exe $ nEnum $ order $ runMode) in
   Term.exit @@ Term.eval (main, info)

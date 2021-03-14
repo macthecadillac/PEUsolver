@@ -16,22 +16,21 @@ module Context = struct
     let f s fmt () = Format.fprintf fmt "%s" s in
     List.pp ~pp_sep:(f "; ") ~pp_start:(f "[") ~pp_stop:(f "]") Grammar.pp
 
-  let to_string a =
-    let esc = Printf.sprintf "%c" '\t' in
-    String.concat esc (List.map Grammar.to_string a)
+  let to_string a = String.concat "\t" (List.map Grammar.to_string a)
 
   let of_string s = List.map Grammar.of_string @@ String.split_on_char '\t' s
 end
 
-type t = PCFG.t ContextMap.t
+type t = PCFG.t * PCFG.t ContextMap.t
 
-let pp fmt cmap =
+let pp fmt (pcfg, cmap) =
+  Format.fprintf fmt "Base PCFG:\n%a\n" PCFG.pp pcfg;
   ContextMap.iter
   (fun key map ->
     Format.fprintf fmt "Context: %a\nPCFG:\n%a\n\n" Context.pp key PCFG.pp map)
   cmap
 
-type raw_t = (Context.t * PCFG.raw_t) list
+type raw_t = PCFG.raw_t * (Context.t * PCFG.raw_t) list
 
 module T = TCOND
 module M = Grammar.Map
@@ -57,72 +56,68 @@ let enumerate_hog p =
     let contexts =
       let+ loc = rev @@ loc_list ast in
       let h, l = T.apply loc ast p in
-      h, l in
+      l, h in
     rev_append contexts acc)
   []
 
 let train ntMap p asts =
+  let open List in
   let pairs = enumerate_hog p asts in
-  let f acc (rule, context) =
-    ContextMap.update context
-    (function
-       None ->
-         let ntType = Option.get_exn @@ M.get rule ntMap in
-         Some (M.singleton ntType (M.singleton rule 1))
-     | Some m ->
-         let open Option in
-         let ntType = get_exn @@ M.get rule ntMap in
-         let inc_opt = (fold (fun acc a -> (+) a <$> acc) (pure 1)) in
-         let update_w_default = fold (fun _ a -> Some (M.update rule inc_opt a))
-           @@ Some (M.singleton rule 1) in
-         Some (M.update ntType update_w_default m))
-    acc in
-  let open List.Infix in
-  let+ context, inner = List.fold_left f ContextMap.empty pairs
-    |> ContextMap.to_list in
-  let assocs =
-    let+ ntType, inner' = M.to_list inner in
-    ntType, M.to_list inner' in
-  context, assocs
+  let aux acc (context, rule) =
+    let f = function None -> Some [rule] | Some l -> Some (rule::l) in
+    ContextMap.update context f acc in
+  let l =
+    let* context, rules = fold_left aux ContextMap.empty pairs
+      |> ContextMap.to_list in
+    let* () = mguard @@ not @@ is_empty context in (* discard empty context *)
+    [context, PCFG.count ntMap rules] in
+  PCFG.train ntMap [] asts, l
 
-let compile ntMap raw =
+let compile ntMap (p_raw, l) =
   let open List.Infix in
   let l =
-    let+ context, pcfg_raw = raw in
+    let+ context, pcfg_raw = l in
     context, PCFG.compile ntMap pcfg_raw in
-  ContextMap.of_list l
+  PCFG.compile ntMap p_raw, ContextMap.of_list l
 
-let encode raw =
+let encode (p_raw, l) =
   let assoc =
     let open List.Infix in
-    let+ context, pcfg_raw = raw in
-    let contextString = String.concat " " (Grammar.to_string <$> context) in
+    let+ context, pcfg_raw = l in
+    let contextString = Context.to_string context in
     contextString, PCFG.encode pcfg_raw in
   let encodedPHOG = JSON.of_assoc assoc in
-  let jsonAssoc = ["contextual-word-count", encodedPHOG] in
+  let basePCFG = PCFG.encode p_raw in
+  let jsonAssoc = ["context", encodedPHOG; "base", basePCFG] in
   JSON.of_assoc jsonAssoc
 
 let decode t =
   let open Result.Infix in
   let* jsonAssoc = JSON.read_assoc t in
-  let contextAssoc =
+  let* contextAssoc = List.assoc_opt ~eq:String.equal "context" jsonAssoc
+    |> Option.to_result (`Msg "PHOG.decode: malformed config") in
+  let* pcfgJSON = List.assoc_opt ~eq:String.equal "base" jsonAssoc
+    |> Option.to_result (`Msg "PHOG.decode: malformed config") in
+  let* basePCFG = PCFG.decode pcfgJSON in
+  let* assoc = JSON.read_assoc contextAssoc in
+  let+ raw =
     List.map
     (function context, json ->
       let+ pcfg_raw = PCFG.decode json in
       Context.of_string context, pcfg_raw)
-    jsonAssoc in
-  Result.flatten_l contextAssoc
+    assoc
+    |> Result.flatten_l in
+  basePCFG, raw
 
-(* FIXME: default should fall back to a fallback PCFG *)
-let rule_cost phog context rule =
+let rule_cost (basePCFG, m) context rule =
   let open Option.Infix in
   let costOpt =
-    let+ pcfg = ContextMap.get context phog in
-    PCFG.rule_cost pcfg rule in
-  Option.get_or ~default:0. costOpt
+    let* pcfg = ContextMap.get context m in
+    try Some (PCFG.rule_cost pcfg rule) with
+      Invalid_argument _ -> None in  (* PCFG doesn't contain ntType *)
+  Option.get_or ~default:(PCFG.rule_cost basePCFG rule) costOpt
 
-let ast_cost phog context t =
-  let aux = function
-      s, [] -> rule_cost phog context s (* terminals *)
-    | s, l -> List.fold_left (+.) (rule_cost phog context s) l in
-  Tree.fold (curry aux) t
+let ast_cost phog p t =
+  let pairs = enumerate_hog p [t] in
+  List.map (uncurry (rule_cost phog)) pairs
+  |> List.fold_left (+.) 0.

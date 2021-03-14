@@ -6,7 +6,7 @@ type t = string
 
 type 'a printer = Format.formatter -> 'a -> unit
 
-let pp = String.pp
+let pp fmt s = Format.fprintf fmt "%s" s
 
 let equal = String.equal
 
@@ -19,10 +19,10 @@ let to_string a = a
 let init = "Start"
 
 let parse_spec s =
-  let open Result in
+  let open Result.Infix in
   let* fpath = Fpath.of_string s in
   let* str = File.read fpath in
-  Sexp.parse_string_list str |> map_err (fun s -> `Msg s)
+  Sexp.parse_string_list str |> Result.map_err (fun s -> `Msg s)
 
 let sexp_atom = function
     `Atom a -> Ok a
@@ -46,36 +46,47 @@ module Map = struct
 end
 
 let filter_grammar_spec (spec : Sexp.t list) : (Sexp.t list, [`Msg of string]) result =
-  let open Result in
+  let open Result.Infix in
   let filter_fun_def = function `List (`Atom "synth-fun"::_) -> true | _ -> false in
   let* l = List.filter filter_fun_def spec |> List.hd |> sexp_list in
   (* drop synth-fun, f, args, return *)
   List.drop 4 l |> List.hd |> sexp_list
 
 let succession_map specs =
-  let open Result in
+  let open Result.Infix in
   let build_map (a : Sexp.t) =
     let aux_nonterms l =
-      let* l = List.map sexp_atom l |> flatten_l in
+      let* l = List.map sexp_atom l |> Result.flatten_l in
       match l with
         name::rest -> Ok (name, rest)
       | _ -> Error (`Msg "Malformed spec") in
     let* l = sexp_list a in
     match l with
-      [`Atom ntType; `Atom _; `List terms] ->
+      [`Atom ntType; `Atom t; `List terms] ->
+        let args_f s =
+          let pred = String.equal "_arg_" @@ String.take 5 s in
+          match t with
+            (* add quotes for string literals. Prepend type for arguments *)
+            "String" ->
+              if pred then "str." ^ s else
+                if String.equal init ntType then s  (* starting symbol is never literal *)
+              else Printf.sprintf "\"%s\"" s
+          | "Int" -> if pred then "int." ^ s else s
+          | "Bool" -> if pred then "bool." ^ s else s
+          | _ -> s in
         let tm' =
           let+ desc =
             List.map
             (function
-              `Atom s -> Ok s
+              `Atom s -> Ok (args_f s)
             | `List (`Atom s::_) -> Ok s
             | _ -> Error (`Msg "Malformed spec"))
             terms
-            |> flatten_l in
+            |> Result.flatten_l in
           Map.add ntType desc Map.empty in
         List.fold_left
         (fun acc -> function
-            `Atom s -> Map.add s [] <$> acc
+            `Atom s -> Map.add (args_f s) [] <$> acc
           | `List l ->
               let* m = acc in
               let+ k, v = aux_nonterms l in
@@ -94,12 +105,12 @@ let succession_map specs =
   List.fold_left (fun acc spec -> merge_m acc @@ build_map spec) (Ok Map.empty) specs'
 
 let rule_nttype_map (specs : Sexp.t list) =
-  let open Result in
+  let open Result.Infix in
   let* smap = succession_map specs in
   let* specs' = filter_grammar_spec specs in
-  let* l = List.map sexp_list specs' |> flatten_l in
+  let* l = List.map sexp_list specs' |> Result.flatten_l in
   let+ assoc =
-    flatten_l @@
+    Result.flatten_l @@
     List.map
     (function
       `Atom ntType::_ ->
@@ -107,7 +118,7 @@ let rule_nttype_map (specs : Sexp.t list) =
         let l' =
           let+ rule = Option.get_exn @@ Map.get ntType smap in
           Ok (rule, ntType) in
-        flatten_l l'
+        Result.flatten_l l'
     | _ -> Error (`Msg "Malformed spec"))
     l in
   Map.of_list
@@ -133,16 +144,40 @@ let merge_rule_nttype_maps map1 map2 =
     Error (`Msg msg)
   else Ok m
 
-let build_solution_ast (spec : Sexp.t list) =
+let build_solution_ast ntMap (spec : Sexp.t list) =
+  (* FIXME: hack to get around quirk about quotes in sexp parsing *)
+  let add_quote s =
+    if Option.is_none @@ Map.get s ntMap && not String.(equal "_arg_" @@ take 5 s)
+    then "\"" ^ s ^ "\"" else s in
   let rec traverse = function
-      `List (`Atom hd::tl) -> Tree.Node (hd, List.map traverse tl)
+      `List (`Atom hd::tl) ->
+        Tree.Node (add_quote hd, List.map traverse tl)
     | `List [] | `List (`List _::_) -> raise (Invalid_argument "Check code")
-    | `Atom a -> Tree.Node (a, []) in
-  let open Result in
+    | `Atom a -> Tree.Node (add_quote a, []) in
+  let open Result.Infix in
   let filter_fun_def = function `List (`Atom "define-fun"::_) -> true | _ -> false in
-  let+ l = List.filter filter_fun_def spec |> List.hd |> sexp_list in
+  let* l = List.filter filter_fun_def spec |> List.hd |> sexp_list in
+  (* get arg types *)
+  let* args =
+    match List.nth l 2 with
+      `List l -> Ok l
+    | _ -> Error (`Msg "Malformed spec") in
   (* drop define-fun, f, args, return *)
-  List.drop 4 l |> List.hd |> traverse
+  let ast = List.drop 4 l |> List.hd |> traverse in
+  (* prefix all args *)
+  List.fold_left
+  (fun acc -> function
+      `List [`Atom arg; `Atom "String"] ->
+        let+ t = acc in
+        Tree.map (fun s -> if String.equal s arg then "str." ^ arg else s) t
+    | `List [`Atom arg; `Atom "Int"] ->
+        let+ t = acc in
+        Tree.map (fun s -> if String.equal s arg then "int." ^ arg else s) t
+    | `List [`Atom arg; `Atom "Bool"] ->
+        let+ t = acc in
+        Tree.map (fun s -> if String.equal s arg then "bool." ^ arg else s) t
+    | _ -> Error (`Msg "Malformed spec"))
+  (Ok ast) args
 
 let is_hole prodMap term =
   not @@ List.is_empty @@ Option.get_exn @@ Map.get term prodMap
@@ -156,6 +191,6 @@ let ast_pp fmt ast =
             ~pp_stop:(str_pp "")
             (fun fmt s -> Format.fprintf fmt "%s" s) in
   let to_string = function
-      s, [] -> Format.sprintf "%a" String.pp s
+      s, [] -> Format.sprintf "%a" pp s
     | s, l -> Format.sprintf "%s(%a)" s list_pp l in
   Format.fprintf fmt "%s" @@ Tree.fold (curry to_string) ast

@@ -15,23 +15,17 @@ module FAStar (E : Search.ENV) = struct
   let rec compare a b =
     let cost l =
       let f s =
-        if Grammar.is_hole E.successorsMap s
-        then 0.  (* holes have zero cost *)
+        if Grammar.is_hole E.successorsMap s then 0.  (* holes have zero cost *)
         else
-          match E.prob with
-            `PCFG pcfg -> PCFG.rule_cost pcfg s
-          | `PHOG phog ->  (* FIXME: not sure if this is correct *)
-              let ast =
-                match List.rev l with
-                  [] -> raise (Invalid_argument "Nill path")
-                | (_, n)::tl ->
-                    List.fold_left
-                    (fun acc (_, r) -> Tree.Node (r, [acc]))
-                    (Tree.Node (n, []))
-                    tl in
-              let loc = List.replicate (List.length l - 1) TCOND.(M DownFirst) in
-              let _, context = TCOND.apply loc ast E.tcond_program in
-              PHOG.ast_cost phog context ast in
+          let ast =
+            match List.rev l with
+              [] -> raise (Invalid_argument "Nill path")
+            | (_, n)::tl ->
+                List.fold_left
+                (fun acc (_, r) -> Tree.Node (r, [acc]))
+                (Tree.Node (n, []))
+                tl in
+          E.ast_cost ast in
       List.map (f % snd) l |> List.fold_left (+.) 0. in
     Float.compare (cost b) (cost a)
 end

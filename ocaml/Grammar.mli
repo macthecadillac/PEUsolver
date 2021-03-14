@@ -39,7 +39,7 @@ val merge_rule_nttype_maps : t Map.t -> t Map.t -> (t Map.t, [`Msg of string]) r
 
 (** [build_solution_ast spec] builds an AST based on the solution in the given
     spec *)
-val build_solution_ast : Sexp.t list -> (t Tree.t, [`Msg of string]) result
+val build_solution_ast : t Map.t -> Sexp.t list -> (t Tree.t, [`Msg of string]) result
 
 (** [is_hole successorMap rule] checks if the production rule is a hole *)
 val is_hole : t list Map.t -> t -> bool

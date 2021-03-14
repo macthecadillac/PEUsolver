@@ -2,6 +2,8 @@ open Containers
 open Fun
 open Bos.OS
 
+module M = Grammar.Map
+
 type 'a printer = Format.formatter -> 'a -> unit
 
 type count = { wordCount : int; vocab : int }
@@ -9,18 +11,41 @@ type count = { wordCount : int; vocab : int }
 let count_pp fmt c =
   Format.fprintf fmt "{ wordCount : %i; vocab : %i }" c.wordCount c.vocab
 
-type t = { counts : count Grammar.Map.t;
+type t = { counts : count M.t;
            (* map the rules to the non-terminal type they belong *)
-           ntMap : Grammar.t Grammar.Map.t;
-           probMap : float Grammar.Map.t }
+           ntMap : Grammar.t M.t;
+           probMap : float M.t }
 
 let pp fmt t =
   Format.fprintf fmt "Counts: %a\nprobMap: %a\nntMap: %a"
-  (Grammar.Map.pp Grammar.pp count_pp) t.counts
-  (Grammar.Map.pp Grammar.pp Float.pp) t.probMap
-  (Grammar.Map.pp Grammar.pp Grammar.pp) t.ntMap
+  (M.pp Grammar.pp count_pp) t.counts
+  (M.pp Grammar.pp Float.pp) t.probMap
+  (M.pp Grammar.pp Grammar.pp) t.ntMap
 
 type raw_t = (Grammar.t * (Grammar.t * int) list) list
+
+let count ntMap rules =
+  let open List.Infix in
+  let aux acc rule =
+    let ntType = Option.get_exn @@ M.get rule ntMap in
+    let open Option in
+    let inc_opt = (fold (fun acc a -> (+) a <$> acc) (pure 1)) in
+    let update_w_default = fold (fun _ a -> Some (M.update rule inc_opt a))
+      @@ Some (M.singleton rule 1) in
+    M.update ntType update_w_default acc in
+  let open List.Infix in
+  let+ ntType, inner = List.fold_left aux M.empty rules |> M.to_list in
+  let assocs =
+    let+ rule, count = M.to_list inner in
+    rule, count in
+  ntType, assocs
+
+let train ntMap _ asts =
+  let open List.Infix in
+  let rules =
+    let* ast = asts in
+    Tree.flatten ast in
+  count ntMap rules
 
 let decode json =
   let open Result.Infix in
@@ -30,7 +55,7 @@ let decode json =
     |> flatten_l in
   let* l = JSON.read_assoc json in
   let* termTypes = List.assoc_opt ~eq:String.equal "word-count" l
-    |> Option.to_result (`Msg "Malformed PCFG config") in
+    |> Option.to_result (`Msg "PCFG.decode: malformed config") in
   let* assoc = JSON.read_assoc termTypes in
   aux Grammar.of_string JSON.read_assoc assoc
   >>= aux id (aux Grammar.of_string JSON.read_int)
@@ -63,25 +88,25 @@ let compile ntMap assocs =
       let+ rule, cnt = l in
       rule, Float.((1. +. of_int cnt) /. (of_int v +. of_int totCnt)) in  (* +1 smoothing *)
       (* rule, if totCnt = 0 then 0. else Float.(of_int cnt /. of_int totCnt) in *)
-    Grammar.Map.of_list assoc' in
+    M.of_list assoc' in
   let counts = List.combine ntWordCount ntVocab
     |> List.map (function (s, wordCount), (_, vocab) -> s, { wordCount; vocab })
-    |> Grammar.Map.of_list in
+    |> M.of_list in
   { counts; probMap; ntMap }
 
 let rule_cost pcfg rule =
   let open Option.Infix in
   let costOpt =
-    let+ ntType = Grammar.Map.get rule pcfg.ntMap in
+    let+ ntType = M.get rule pcfg.ntMap in
     (* the non-terminal type must exist in the map *)
-    let count = Option.get_exn @@ Grammar.Map.get ntType pcfg.counts in
+    let count = Option.get_exn @@ M.get ntType pcfg.counts in
     let default = Float.(1. /. (of_int count.vocab +. of_int count.wordCount)) in
     (* let default = 0.001 in *)
-    Option.get_or ~default (Grammar.Map.get rule pcfg.probMap) in
+    Option.get_or ~default (M.get rule pcfg.probMap) in
   (* if a "rule" isn't found in ntMap, it is a hole which should have a cost of 0 *)
   Option.get_or ~default:0. costOpt
 
-let ast_cost pcfg t =
+let ast_cost pcfg _ t =
   let aux = function
       s, [] -> rule_cost pcfg s (* terminals *)
     | s, l -> List.fold_left (+.) (rule_cost pcfg s) l in
