@@ -1,7 +1,7 @@
 (set-logic SLIA)
-(synth-fun f ((name String)) String
+(synth-fun f ((_arg_0 String)) String
  ((Start String (ntString))
-  (ntString String (name " " "." "Dr."
+  (ntString String (_arg_0 " " "." "Dr."
 					(str.++ ntString ntString)
 					(str.replace ntString ntString ntString)
 					(str.at ntString ntInt)
@@ -74,4 +74,4 @@
 (constraint (= (f "Jenee Pannell") "Dr. Jenee"))
 
 (check-synth)
-(define-fun f_1 ((name String)) String (str.++ (str.substr "Dr." 0 2) (str.++ "." (str.++ " " (str.substr name 0 (str.indexof name " " 0))))))
+(define-fun f_1 ((_arg_0 String)) String (str.++ (str.substr "Dr." 0 2) (str.++ "." (str.++ " " (str.substr name 0 (str.indexof name " " 0))))))

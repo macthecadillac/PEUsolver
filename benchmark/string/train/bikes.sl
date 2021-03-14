@@ -1,12 +1,12 @@
 (set-logic SLIA)
-(synth-fun f ((name String)) String
+(synth-fun f ((_arg_0 String)) String
     ((Start String (ntString))
-     (ntString String (name " "
+     (ntString String (_arg_0 " "
 (str.++ ntString ntString)
 (str.replace ntString ntString ntString)
 (str.at ntString ntInt)
 (int.to.str ntInt)
-(ite ntBool ntString ntString)
+(str.ite ntBool ntString ntString)
 (str.substr ntString ntInt ntInt)
 ))
       (ntInt Int (0 1 2 3 4 5
@@ -31,4 +31,4 @@
 (constraint (= (f "Ducati125") "Ducati"))
 
 (check-synth)
-(define-fun f_1 ((name String)) String (str.substr name 0 (- (str.len name) 3)))
+(define-fun f_1 ((_arg_0 String)) String (str.substr name 0 (- (str.len name) 3)))

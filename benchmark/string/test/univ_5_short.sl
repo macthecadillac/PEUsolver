@@ -1,12 +1,12 @@
 (set-logic SLIA)
-(synth-fun f ((col1 String) (col2 String)) String
+(synth-fun f ((_arg_0 String) (_arg_1 String)) String
     ((Start String (ntString))
-     (ntString String (col1 col2 " " "," "A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z" "New York"  
+     (ntString String (_arg_0 _arg_1 " " "," "A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z" "New York"  
 (str.++ ntString ntString)
 (str.replace ntString ntString ntString)
 (str.at ntString ntInt)
 (int.to.str ntInt)
-(ite ntBool ntString ntString)
+(str.ite ntBool ntString ntString)
 (str.substr ntString ntInt ntInt)
 ))
       (ntInt Int (0 1 2

@@ -1,5 +1,5 @@
 ; https=//exceljet.net/formula/remove-leading-and-trailing-spaces-from-text
-; (str.++ (ite (str.prefixof " " _arg_0) "" (str.at _arg_0 0)) (str.substr (str.replace (str.replace (str.replace (str.replace (str.replace _arg_0 (str.++ " " " ") " ") (str.++ " " " ") " ") (str.++ " " " ") " ") (str.++ " " " ") " ") (str.++ " " " ") " ") 1 (str.len _arg_0)))
+; (str.++ (str.ite (str.prefixof " " _arg_0) "" (str.at _arg_0 0)) (str.substr (str.replace (str.replace (str.replace (str.replace (str.replace _arg_0 (str.++ " " " ") " ") (str.++ " " " ") " ") (str.++ " " " ") " ") (str.++ " " " ") " ") (str.++ " " " ") " ") 1 (str.len _arg_0)))
 (set-logic SLIA)
 (synth-fun f ((_arg_0 String)) String 
  ( (Start String (ntString)) 
@@ -10,7 +10,7 @@
 	(str.replace ntString ntString ntString) 
 	(str.at ntString ntInt)
 	(int.to.str ntInt)
-	(ite ntBool ntString ntString)
+	(str.ite ntBool ntString ntString)
 	(str.substr ntString ntInt ntInt)
 )) 
  (ntInt Int (
@@ -20,7 +20,7 @@
 	(- ntInt ntInt)
 	(str.len ntString)
 	(str.to.int ntString)
-	(ite ntBool ntInt ntInt)
+	(int.ite ntBool ntInt ntInt)
 	(str.indexof ntString ntString ntInt)
 )) 
  (ntBool Bool (

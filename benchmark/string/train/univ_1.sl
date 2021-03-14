@@ -1,12 +1,12 @@
 (set-logic SLIA)
-(synth-fun f ((col1 String) (col2 String)) String
+(synth-fun f ((_arg_0 String) (_arg_1 String)) String
     ((Start String (ntString))
-     (ntString String (col1 col2 " " ","
+     (ntString String (_arg_0 _arg_1 " " ","
 (str.++ ntString ntString)
 (str.replace ntString ntString ntString)
 (str.at ntString ntInt)
 (int.to.str ntInt)
-(ite ntBool ntString ntString)
+(str.ite ntBool ntString ntString)
 (str.substr ntString ntInt ntInt)
 ))
       (ntInt Int (0 1 2
@@ -42,4 +42,4 @@
 "Columbia University, New York, NY, USA"))
 
 (check-synth)
-(define-fun f_1 ((col1 String) (col2 String)) String (str.++ (str.++ (str.++ col1 ",") " ") col2))
+(define-fun f_1 ((_arg_0 String) (_arg_1 String)) String (str.++ (str.++ (str.++ _arg_0 ",") " ") _arg_1))

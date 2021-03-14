@@ -9,7 +9,7 @@
 	(str.replace ntString ntString ntString) 
 	(str.at ntString ntInt)
 	(int.to.str ntInt)
-	(ite ntBool ntString ntString)
+	(str.ite ntBool ntString ntString)
 	(str.substr ntString ntInt ntInt)
 )) 
  (ntInt Int (
@@ -19,7 +19,7 @@
 	(- ntInt ntInt)
 	(str.len ntString)
 	(str.to.int ntString)
-	(ite ntBool ntInt ntInt)
+	(int.ite ntBool ntInt ntInt)
 	(str.indexof ntString ntString ntInt)
 )) 
  (ntBool Bool (

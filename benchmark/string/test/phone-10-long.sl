@@ -1,7 +1,7 @@
 (set-logic SLIA)
-(synth-fun f ((name String)) String
+(synth-fun f ((_arg_0 String)) String
  ((Start String (ntString))
-  (ntString String (name " " "+" "-" "." "(" ")"
+  (ntString String (_arg_0 " " "+" "-" "." "(" ")"
 					(str.++ ntString ntString)
 					(str.replace ntString ntString ntString)
 					(str.at ntString ntInt)

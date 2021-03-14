@@ -9,7 +9,7 @@
 	(str.replace ntString ntString ntString) 
 	(str.at ntString ntInt)
 	(int.to.str ntInt)
-	(ite ntBool ntString ntString)
+	(str.ite ntBool ntString ntString)
 	(str.substr ntString ntInt ntInt)
 )) 
  (ntInt Int (
@@ -19,7 +19,7 @@
 	(- ntInt ntInt)
 	(str.len ntString)
 	(str.to.int ntString)
-	(ite ntBool ntInt ntInt)
+	(int.ite ntBool ntInt ntInt)
 	(str.indexof ntString ntString ntInt)
 )) 
  (ntBool Bool (
@@ -33,4 +33,4 @@
 (constraint (= (f "I love apples" "I hate bananas" "banana") "I hate bananas"))
 (constraint (= (f "I love apples" "I hate bananas" "apple") "I love apples"))
 (check-synth)
-(define-fun f_1 ((_arg_0 String) (_arg_1 String) (_arg_2 String)) String (ite (str.contains _arg_1 _arg_2) _arg_1 _arg_0))
+(define-fun f_1 ((_arg_0 String) (_arg_1 String) (_arg_2 String)) String (str.ite (str.contains _arg_1 _arg_2) _arg_1 _arg_0))

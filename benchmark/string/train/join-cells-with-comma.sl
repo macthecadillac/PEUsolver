@@ -9,7 +9,7 @@
 	(str.replace ntString ntString ntString) 
 	(str.at ntString ntInt)
 	(int.to.str ntInt)
-	(ite ntBool ntString ntString)
+	(str.ite ntBool ntString ntString)
 	(str.substr ntString ntInt ntInt)
 )) 
  (ntInt Int (
@@ -19,7 +19,7 @@
 	(- ntInt ntInt)
 	(str.len ntString)
 	(str.to.int ntString)
-	(ite ntBool ntInt ntInt)
+	(int.ite ntBool ntInt ntInt)
 	(str.indexof ntString ntString ntInt)
 )) 
  (ntBool Bool (
@@ -33,4 +33,4 @@
 (constraint (= (f "figs" "" "apples") "figs, apples"))
 (constraint (= (f "mangos" "kiwis" "grapes") "mangos, kiwis, grapes"))
 (check-synth)
-(define-fun f_1 ((_arg_0 String) (_arg_1 String) (_arg_2 String)) String (str.++ _arg_0 (str.++ "," (str.++ " " (str.++ _arg_1 (ite (str.prefixof _arg_1 _arg_0) _arg_2 (str.++ "," (str.++ " " _arg_2))))))))
+(define-fun f_1 ((_arg_0 String) (_arg_1 String) (_arg_2 String)) String (str.++ _arg_0 (str.++ "," (str.++ " " (str.++ _arg_1 (str.ite (str.prefixof _arg_1 _arg_0) _arg_2 (str.++ "," (str.++ " " _arg_2))))))))

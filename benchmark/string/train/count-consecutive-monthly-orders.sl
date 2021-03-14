@@ -9,7 +9,7 @@
 	(str.replace ntString ntString ntString) 
 	(str.at ntString ntInt)
 	(int.to.str ntInt)
-	(ite ntBool ntString ntString)
+	(str.ite ntBool ntString ntString)
 	(str.substr ntString ntInt ntInt)
 )) 
  (ntInt Int (
@@ -19,7 +19,7 @@
 	(- ntInt ntInt)
 	(str.len ntString)
 	(str.to.int ntString)
-	(ite ntBool ntInt ntInt)
+	(int.ite ntBool ntInt ntInt)
 	(str.indexof ntString ntString ntInt)
 )) 
  (ntBool Bool (
@@ -37,4 +37,4 @@
 (constraint (= (f "3 0 3 0 1 2") 2))
 (constraint (= (f "5 3 2 5 6 1") 6))
 (check-synth)
-(define-fun f_1 ((_arg_0 String)) Int (ite (str.contains _arg_0 "0") (ite (str.suffixof "0" _arg_0) (+ (+ 1 1) 1) (ite (str.prefixof "0" _arg_0) (+ 1 1) (ite (= (+ (str.indexof _arg_0 "0" 1) -1) 1) (ite (str.contains _arg_0 (int.to.str 1)) (+ 1 1) (+ (+ 1 1) 1)) (+ (+ (+ 1 1) 1) 1)))) (str.indexof _arg_0 (str.at _arg_0 0) 1)))
+(define-fun f_1 ((_arg_0 String)) Int (int.ite (str.contains _arg_0 "0") (int.ite (str.suffixof "0" _arg_0) (+ (+ 1 1) 1) (int.ite (str.prefixof "0" _arg_0) (+ 1 1) (int.ite (= (+ (str.indexof _arg_0 "0" 1) -1) 1) (int.ite (str.contains _arg_0 (int.to.str 1)) (+ 1 1) (+ (+ 1 1) 1)) (+ (+ (+ 1 1) 1) 1)))) (str.indexof _arg_0 (str.at _arg_0 0) 1)))
