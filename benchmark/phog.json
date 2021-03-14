@@ -1,0 +1,425 @@
+{
+  "context": {
+    "str.to.int": {
+      "word-count": { "ntString": { "str.substr": 1, "str._arg_0": 1 } }
+    },
+    "str.suffixof\tstr._arg_1": {
+      "word-count": { "ntString": { "str._arg_0": 2 } }
+    },
+    "str.suffixof\t0": { "word-count": { "ntString": { "str._arg_0": 1 } } },
+    "str.suffixof\t\"USA\"": {
+      "word-count": { "ntString": { "str._arg_1": 8 } }
+    },
+    "str.suffixof": {
+      "word-count": {
+        "ntString": { "str._arg_1": 2, "\"USA\"": 8 },
+        "ntInt": { "0": 1 }
+      }
+    },
+    "str.substr\tstr.indexof": { "word-count": { "ntInt": { "+": 1 } } },
+    "str.substr\tstr._arg_1": {
+      "word-count": { "ntInt": { "0": 1, "+": 1 } }
+    },
+    "str.substr\tstr._arg_0": {
+      "word-count": {
+        "ntInt": {
+          "str.indexof": 1,
+          "int._arg_1": 1,
+          "4": 4,
+          "1": 1,
+          "0": 25,
+          "-": 4,
+          "+": 10
+        }
+      }
+    },
+    "str.substr\tstr.++": { "word-count": { "ntInt": { "int._arg_1": 1 } } },
+    "str.substr\tint._arg_1": {
+      "word-count": { "ntInt": { "str.len": 1, "int._arg_1": 1 } }
+    },
+    "str.substr\t4": { "word-count": { "ntInt": { "3": 4 } } },
+    "str.substr\t1": { "word-count": { "ntInt": { "str.indexof": 1 } } },
+    "str.substr\t0": {
+      "word-count": {
+        "ntInt": { "str.indexof": 15, "3": 4, "2": 4, "-": 4, "+": 3 }
+      }
+    },
+    "str.substr\t-": { "word-count": { "ntInt": { "3": 4 } } },
+    "str.substr\t+": { "word-count": { "ntInt": { "str.len": 6, "3": 5 } } },
+    "str.substr\t\"Dr.\"": { "word-count": { "ntInt": { "0": 4 } } },
+    "str.substr": {
+      "word-count": {
+        "ntString": {
+          "str._arg_1": 2,
+          "str._arg_0": 46,
+          "str.++": 1,
+          "\"Dr.\"": 4
+        }
+      }
+    },
+    "str.replace\tstr.substr": {
+      "word-count": { "ntString": { "\" \"": 1 } }
+    },
+    "str.replace\tstr.replace": {
+      "word-count": {
+        "ntString": { "str._arg_1": 1, "str.++": 1, "\"\"": 1, "\" \"": 1 },
+        "ntInt": { "-": 5 }
+      }
+    },
+    "str.replace\tstr._arg_1": {
+      "word-count": { "ntString": { "\"\"": 2 } }
+    },
+    "str.replace\tstr._arg_0": {
+      "word-count": {
+        "ntString": {
+          "str.substr": 1,
+          "str.replace": 1,
+          "str._arg_1": 1,
+          "\"CAN\"": 1,
+          "\"\"": 1,
+          "\" \"": 1
+        },
+        "ntInt": { "2": 1, "-": 10 }
+      }
+    },
+    "str.replace\tstr.++": { "word-count": { "ntString": { "\"\"": 1 } } },
+    "str.replace\t2": { "word-count": { "ntInt": { "1": 1 } } },
+    "str.replace\t-": {
+      "word-count": { "ntString": { "str.++": 4, "\".\"": 8, "\"\"": 3 } }
+    },
+    "str.replace\t\"that\"": {
+      "word-count": { "ntString": { "str._arg_0": 1 } }
+    },
+    "str.replace\t\"CAN\"": { "word-count": { "ntString": { "\"US\"": 1 } } },
+    "str.replace\t\" \"": { "word-count": { "ntInt": { "-": 2 } } },
+    "str.replace": {
+      "word-count": {
+        "ntString": { "str.replace": 8, "str._arg_0": 16, "\"that\"": 1 }
+      }
+    },
+    "str.prefixof\tstr._arg_2": {
+      "word-count": { "ntString": { "str._arg_1": 1 } }
+    },
+    "str.prefixof\tstr._arg_1": {
+      "word-count": { "ntString": { "str._arg_0": 3 } }
+    },
+    "str.prefixof\t0": { "word-count": { "ntString": { "str._arg_0": 1 } } },
+    "str.prefixof\t\"C0\"": {
+      "word-count": { "ntString": { "str._arg_0": 1 } }
+    },
+    "str.prefixof": {
+      "word-count": {
+        "ntString": { "str._arg_2": 1, "str._arg_1": 3, "\"C0\"": 1 },
+        "ntInt": { "0": 1 }
+      }
+    },
+    "str.len": {
+      "word-count": {
+        "ntString": {
+          "str.substr": 2,
+          "str._arg_1": 1,
+          "str._arg_0": 18,
+          "str.++": 2,
+          "\"Name\"": 1
+        }
+      }
+    },
+    "str.ite\tstr.suffixof": {
+      "word-count": { "ntString": { "str._arg_1": 8 } }
+    },
+    "str.ite\tstr.prefixof": {
+      "word-count": {
+        "ntString": { "str._arg_2": 1, "str._arg_1": 1, "str._arg_0": 1 }
+      }
+    },
+    "str.ite\tstr.contains": {
+      "word-count": { "ntString": { "str._arg_1": 1 } }
+    },
+    "str.ite\tstr._arg_2": { "word-count": { "ntString": { "str.++": 1 } } },
+    "str.ite\tstr._arg_1": {
+      "word-count": { "ntString": { "str._arg_0": 2, "str.++": 8 } }
+    },
+    "str.ite\tstr._arg_0": {
+      "word-count": { "ntString": { "str._arg_1": 1 } }
+    },
+    "str.ite": {
+      "word-count": {
+        "ntBool": { "str.suffixof": 8, "str.prefixof": 3, "str.contains": 1 }
+      }
+    },
+    "str.indexof\tstr.at": { "word-count": { "ntInt": { "1": 1 } } },
+    "str.indexof\tstr._arg_1": {
+      "word-count": { "ntString": { "\"_\"": 1 }, "ntInt": { "1": 1 } }
+    },
+    "str.indexof\tstr._arg_0": {
+      "word-count": {
+        "ntString": {
+          "str.at": 1,
+          "str._arg_1": 1,
+          "\"overhead\"": 1,
+          "\"/n\"": 1,
+          "\".\"": 1,
+          "\" \"": 18
+        },
+        "ntInt": { "0": 1, "-": 1 }
+      }
+    },
+    "str.indexof\tstr.++": { "word-count": { "ntString": { "\"|\"": 1 } } },
+    "str.indexof\t0": { "word-count": { "ntInt": { "1": 1 } } },
+    "str.indexof\t-": { "word-count": { "ntInt": { "1": 1 } } },
+    "str.indexof\t\"|\"": { "word-count": { "ntInt": { "1": 1 } } },
+    "str.indexof\t\"overhead\"": { "word-count": { "ntInt": { "0": 1 } } },
+    "str.indexof\t\"_\"": { "word-count": { "ntInt": { "1": 1 } } },
+    "str.indexof\t\"/n\"": { "word-count": { "ntInt": { "1": 1 } } },
+    "str.indexof\t\".\"": { "word-count": { "ntInt": { "1": 1 } } },
+    "str.indexof\t\" \"": {
+      "word-count": { "ntInt": { "str.len": 1, "1": 5, "0": 12 } }
+    },
+    "str.indexof": {
+      "word-count": {
+        "ntString": { "str._arg_1": 1, "str._arg_0": 25, "str.++": 1 }
+      }
+    },
+    "str.contains\tstr.replace": { "word-count": { "ntInt": { "1": 1 } } },
+    "str.contains\tstr._arg_1": {
+      "word-count": { "ntString": { "str._arg_2": 1 } }
+    },
+    "str.contains\tstr._arg_0": {
+      "word-count": {
+        "ntString": {
+          "str._arg_3": 1,
+          "str._arg_2": 1,
+          "str._arg_1": 2,
+          "int.to.str": 1,
+          "\"9999999\"": 1
+        },
+        "ntInt": { "0": 1 }
+      }
+    },
+    "str.contains\tstr.++": {
+      "word-count": { "ntString": { "str._arg_0": 1 } }
+    },
+    "str.contains": {
+      "word-count": {
+        "ntString": {
+          "str.replace": 1,
+          "str._arg_1": 1,
+          "str._arg_0": 7,
+          "str.++": 1
+        }
+      }
+    },
+    "str.at\tstr._arg_1": { "word-count": { "ntInt": { "0": 5 } } },
+    "str.at\tstr._arg_0": { "word-count": { "ntInt": { "0": 10 } } },
+    "str.at\tstr.++": { "word-count": { "ntInt": { "int._arg_1": 1 } } },
+    "str.at": {
+      "word-count": {
+        "ntString": { "str._arg_1": 5, "str._arg_0": 10, "str.++": 1 }
+      }
+    },
+    "str.++\tstr.substr": { "word-count": { "ntString": { "str.++": 4 } } },
+    "str.++\tstr.at": {
+      "word-count": {
+        "ntString": { "str._arg_1": 1, "str._arg_0": 1, "\".\"": 4 }
+      }
+    },
+    "str.++\tstr._arg_1": {
+      "word-count": {
+        "ntString": { "str.ite": 1, "str.++": 8, "\",\"": 4, "\" \"": 4 }
+      }
+    },
+    "str.++\tstr._arg_0": {
+      "word-count": {
+        "ntString": {
+          "str.++": 5,
+          "\"|\"": 1,
+          "\"/n\"": 1,
+          "\",\"": 4,
+          "\" \"": 9
+        }
+      }
+    },
+    "str.++\tstr.++": {
+      "word-count": {
+        "ntString": {
+          "str.ite": 4,
+          "str.at": 8,
+          "str._arg_2": 2,
+          "str._arg_1": 14,
+          "str._arg_0": 4,
+          "\"yellow\"": 1,
+          "\"orange\"": 1,
+          "\"_acme.com\"": 1,
+          "\"_\"": 1,
+          "\"USA\"": 8,
+          "\"/n\"": 1,
+          "\".\"": 8,
+          "\" \"": 12
+        }
+      }
+    },
+    "str.++\tint.to.str": {
+      "word-count": { "ntString": { "int.to.str": 1 } }
+    },
+    "str.++\t\"ssp.\"": { "word-count": { "ntString": { "\"ssp.\"": 1 } } },
+    "str.++\t\"pink\"": { "word-count": { "ntString": { "\"blue\"": 1 } } },
+    "str.++\t\".\"": { "word-count": { "ntString": { "str.++": 4 } } },
+    "str.++\t\",\"": {
+      "word-count": { "ntString": { "str.++": 2, "\" \"": 12 } }
+    },
+    "str.++\t\")\"": { "word-count": { "ntString": { "\" \"": 4 } } },
+    "str.++\t\"(\"": { "word-count": { "ntString": { "str.replace": 4 } } },
+    "str.++\t\" \"": {
+      "word-count": {
+        "ntString": {
+          "str.substr": 4,
+          "str._arg_2": 1,
+          "str._arg_0": 2,
+          "str.++": 1,
+          "\"US\"": 1
+        }
+      }
+    },
+    "str.++": {
+      "word-count": {
+        "ntString": {
+          "str.substr": 4,
+          "str.at": 6,
+          "str._arg_1": 17,
+          "str._arg_0": 20,
+          "str.++": 65,
+          "int.to.str": 1,
+          "\"ssp.\"": 1,
+          "\"pink\"": 1,
+          "\".\"": 4,
+          "\",\"": 14,
+          "\")\"": 4,
+          "\"(\"": 4,
+          "\" \"": 9
+        }
+      }
+    },
+    "int.to.str": {
+      "word-count": {
+        "ntInt": { "str.len": 1, "str.indexof": 1, "int._arg_0": 1, "1": 1 }
+      }
+    },
+    "int.ite\tstr.suffixof": {
+      "word-count": { "ntInt": { "1": 1, "+": 1 } }
+    },
+    "int.ite\tstr.prefixof": { "word-count": { "ntInt": { "+": 1 } } },
+    "int.ite\tstr.contains": {
+      "word-count": { "ntInt": { "int.ite": 1, "+": 1 } }
+    },
+    "int.ite\tint.ite": {
+      "word-count": { "ntInt": { "str.indexof": 1, "+": 1 } }
+    },
+    "int.ite\t=": { "word-count": { "ntInt": { "int.ite": 1 } } },
+    "int.ite\t1": { "word-count": { "ntInt": { "-1": 1 } } },
+    "int.ite\t+": { "word-count": { "ntInt": { "int.ite": 2, "+": 1 } } },
+    "int.ite": {
+      "word-count": {
+        "ntBool": {
+          "str.suffixof": 2,
+          "str.prefixof": 1,
+          "str.contains": 2,
+          "=": 1
+        }
+      }
+    },
+    "=\tstr.indexof": { "word-count": { "ntInt": { "-1": 1 } } },
+    "=\t+": { "word-count": { "ntInt": { "1": 1 } } },
+    "=": { "word-count": { "ntInt": { "str.indexof": 1, "+": 1 } } },
+    "-\tstr.len": { "word-count": { "ntInt": { "int._arg_2": 1, "3": 8 } } },
+    "-\t3": { "word-count": { "ntInt": { "str.len": 1 } } },
+    "-": { "word-count": { "ntInt": { "str.len": 9, "3": 1 } } },
+    "+\tstr.len": { "word-count": { "ntInt": { "1": 1, "-1": 1 } } },
+    "+\tstr.indexof": { "word-count": { "ntInt": { "1": 5, "-1": 2 } } },
+    "+\tint.ite": { "word-count": { "ntInt": { "1": 1 } } },
+    "+\t5": { "word-count": { "ntInt": { "3": 4 } } },
+    "+\t3": { "word-count": { "ntInt": { "3": 1 } } },
+    "+\t1": { "word-count": { "ntInt": { "1": 6 } } },
+    "+\t-1": { "word-count": { "ntInt": { "int._arg_1": 2 } } },
+    "+\t-": { "word-count": { "ntInt": { "1": 1 } } },
+    "+\t+": { "word-count": { "ntInt": { "1": 5, "-1": 2 } } },
+    "+": {
+      "word-count": {
+        "ntInt": {
+          "str.len": 2,
+          "str.indexof": 7,
+          "int.ite": 1,
+          "5": 4,
+          "3": 1,
+          "1": 6,
+          "-1": 2,
+          "-": 1,
+          "+": 7
+        }
+      }
+    }
+  },
+  "base": {
+    "word-count": {
+      "ntString": {
+        "str.substr": 53,
+        "str.replace": 25,
+        "str.ite": 12,
+        "str.at": 16,
+        "str._arg_3": 1,
+        "str._arg_2": 7,
+        "str._arg_1": 72,
+        "str._arg_0": 163,
+        "str.++": 150,
+        "int.to.str": 4,
+        "\"|\"": 2,
+        "\"yellow\"": 1,
+        "\"that\"": 1,
+        "\"ssp.\"": 2,
+        "\"pink\"": 1,
+        "\"overhead\"": 1,
+        "\"orange\"": 1,
+        "\"blue\"": 1,
+        "\"_acme.com\"": 1,
+        "\"_\"": 2,
+        "\"USA\"": 16,
+        "\"US\"": 2,
+        "\"Name\"": 1,
+        "\"Dr.\"": 4,
+        "\"CAN\"": 1,
+        "\"C0\"": 1,
+        "\"9999999\"": 1,
+        "\"/n\"": 3,
+        "\".\"": 25,
+        "\",\"": 22,
+        "\")\"": 4,
+        "\"(\"": 4,
+        "\"\"": 8,
+        "\" \"": 71
+      },
+      "ntInt": {
+        "str.to.int": 2,
+        "str.len": 24,
+        "str.indexof": 27,
+        "int.ite": 6,
+        "int._arg_2": 1,
+        "int._arg_1": 6,
+        "int._arg_0": 1,
+        "5": 4,
+        "4": 4,
+        "3": 32,
+        "2": 5,
+        "1": 44,
+        "0": 62,
+        "-1": 9,
+        "-": 28,
+        "+": 31
+      },
+      "ntBool": {
+        "str.suffixof": 11,
+        "str.prefixof": 6,
+        "str.contains": 10,
+        "=": 2
+      }
+    }
+  }
+}
