@@ -2,4 +2,8 @@
 (package
   (name cse291project)
   (depends
-    (containers (>= 3.2))))
+    (containers (>= 3.2))
+    (bos (>= 0.2))
+    (cmdliner (>= 1.0))
+    (yojson (>= 1.4))))
+(wrapped_executables false)

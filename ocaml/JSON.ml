@@ -13,11 +13,11 @@ let parse s =
 
 let read_int = function
     `Int i -> Ok i
-  | _ -> Error (`Msg "Malformed PCFG config")
+  | _ -> Error (`Msg "JSON.read_int: malformed config")
 
 let read_assoc = function
     `Assoc l -> Ok l
-  | _ -> Error (`Msg "Malformed PCFG config")
+  | _ -> Error (`Msg "JSON.read_assoc: malformed config")
 
 let of_int i = `Int i
 
@@ -27,6 +27,6 @@ let of_string s = `String s
 
 let save (t : t) path =
   let open Result.Infix in
-  let str = Yojson.Basic.to_string t in
+  let str = Yojson.Basic.pretty_to_string t in
   let* fpath = Fpath.of_string path in
   File.write fpath str

@@ -10,8 +10,7 @@ end
 
 module type ENV = sig
   val successorsMap : Grammar.t list Grammar.Map.t
-  val tcond_program : TCOND.p
-  val prob : [`PHOG of PHOG.t | `PCFG of PCFG.t]
+  val ast_cost : Grammar.t Tree.t -> float
 end
 
 module type S = sig
@@ -39,14 +38,6 @@ module Make (E : ENV) (O : PATHORDER) : S = struct
 
   let init = successors Grammar.init
 
-  let ast_cost ast =
-    match E.prob with
-      `PCFG pcfg -> PCFG.ast_cost pcfg ast
-    | `PHOG phog ->
-        let loc = [] in  (* FIXME: certainly wrong *)
-        let _, context = TCOND.apply loc ast E.tcond_program in
-        PHOG.ast_cost phog context ast
-
   let unroll (_, h, t) =
     let open List in
     let expand s =
@@ -69,10 +60,10 @@ module Make (E : ENV) (O : PATHORDER) : S = struct
     let+ ps, t' =
       let+ ps, t' = aux pathTl t in
       cons (hd path) <$> ps, t' in
-    ast_cost t', fold_left Paths.insert (Paths.delete_min h) ps, t'
+    E.ast_cost t', fold_left Paths.insert (Paths.delete_min h) ps, t'
 
   let rec enumerate h =
-    let open Option in
+    let open Option.Infix in
     let* sf = H.find_min h in
     if is_ground sf then Some (sf, H.delete_min h)
     else
@@ -81,7 +72,7 @@ module Make (E : ENV) (O : PATHORDER) : S = struct
       enumerate h'
 
   let sequence =
-    let cost s = ast_cost (Tree.return s) in
+    let cost s = E.ast_cost (Tree.return s) in
     List.map (fun s -> cost s, Paths.singleton [0, s], Tree.return s) init
     |> H.of_list
     |> Seq.unfold enumerate

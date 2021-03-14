@@ -1,4 +1,6 @@
 (executable
   (name main)
-  (modules Main Grammar JSON PairingHeap PCFG PHOG Search SearchOrder TCOND Tree)
-  (libraries bos cmdliner containers yojson))
+  (public_name synthesize)
+  (modules Main Grammar JSON PairingHeap PCFG PHOG Search SearchOrder Sig TCOND Tree)
+  (libraries bos cmdliner containers yojson)
+  (package cse291project))

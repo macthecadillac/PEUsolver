@@ -8,7 +8,7 @@ module Context : sig
 end
 
 (** An intermediate representation for interoperability across modules. *)
-type raw_t = (Context.t * PCFG.raw_t) list
+type raw_t = PCFG.raw_t * (Context.t * PCFG.raw_t) list
 
 (** [encode raw] encodes the raw format into json *)
 val encode : raw_t -> JSON.t
@@ -28,7 +28,7 @@ val compile : Grammar.t Grammar.Map.t -> raw_t -> t
 val rule_cost : t -> Context.t -> Grammar.t -> float
 
 (** [ast_cost t context ast] computes the cost of an entire AST. *)
-val ast_cost : t -> Context.t -> Grammar.t Tree.t -> float
+val ast_cost : t -> TCOND.p -> Grammar.t Tree.t -> float
 
 (** Pretty printer *)
 val pp : t printer

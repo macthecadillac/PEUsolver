@@ -4,114 +4,128 @@
       "word-count": { "ntString": { "str.substr": 1, "str._arg_0": 1 } }
     },
     "str.suffixof\tstr._arg_1": {
-      "word-count": { "ntString": { "str._arg_0": 2 } }
+      "word-count": { "ntString": { "\"USA\"": 8 } }
     },
-    "str.suffixof\t0": { "word-count": { "ntString": { "str._arg_0": 1 } } },
-    "str.suffixof\t\"USA\"": {
-      "word-count": { "ntString": { "str._arg_1": 8 } }
+    "str.suffixof\tstr._arg_0": {
+      "word-count": { "ntString": { "str._arg_1": 2 }, "ntInt": { "0": 1 } }
     },
     "str.suffixof": {
+      "word-count": { "ntString": { "str._arg_1": 8, "str._arg_0": 3 } }
+    },
+    "str.substr\tstr.len": {
+      "word-count": { "ntInt": { "int._arg_1": 1, "+": 6 } }
+    },
+    "str.substr\tstr.indexof": {
       "word-count": {
-        "ntString": { "str._arg_1": 2, "\"USA\"": 8 },
-        "ntInt": { "0": 1 }
+        "ntString": { "str._arg_0": 1 },
+        "ntInt": { "1": 1, "0": 15 }
       }
     },
-    "str.substr\tstr.indexof": { "word-count": { "ntInt": { "+": 1 } } },
-    "str.substr\tstr._arg_1": {
-      "word-count": { "ntInt": { "0": 1, "+": 1 } }
-    },
-    "str.substr\tstr._arg_0": {
-      "word-count": {
-        "ntInt": {
-          "str.indexof": 1,
-          "int._arg_1": 1,
-          "4": 4,
-          "1": 1,
-          "0": 25,
-          "-": 4,
-          "+": 10
-        }
-      }
-    },
-    "str.substr\tstr.++": { "word-count": { "ntInt": { "int._arg_1": 1 } } },
     "str.substr\tint._arg_1": {
-      "word-count": { "ntInt": { "str.len": 1, "int._arg_1": 1 } }
+      "word-count": {
+        "ntString": { "str._arg_0": 1, "str.++": 1 },
+        "ntInt": { "int._arg_1": 1 }
+      }
     },
-    "str.substr\t4": { "word-count": { "ntInt": { "3": 4 } } },
-    "str.substr\t1": { "word-count": { "ntInt": { "str.indexof": 1 } } },
+    "str.substr\t4": { "word-count": { "ntString": { "str._arg_0": 4 } } },
+    "str.substr\t3": {
+      "word-count": { "ntInt": { "4": 4, "0": 4, "-": 4, "+": 5 } }
+    },
+    "str.substr\t2": { "word-count": { "ntInt": { "0": 4 } } },
+    "str.substr\t1": { "word-count": { "ntString": { "str._arg_0": 1 } } },
     "str.substr\t0": {
       "word-count": {
-        "ntInt": { "str.indexof": 15, "3": 4, "2": 4, "-": 4, "+": 3 }
+        "ntString": { "str._arg_1": 1, "str._arg_0": 25, "\"Dr.\"": 4 }
       }
     },
-    "str.substr\t-": { "word-count": { "ntInt": { "3": 4 } } },
-    "str.substr\t+": { "word-count": { "ntInt": { "str.len": 6, "3": 5 } } },
-    "str.substr\t\"Dr.\"": { "word-count": { "ntInt": { "0": 4 } } },
+    "str.substr\t-": {
+      "word-count": { "ntString": { "str._arg_0": 4 }, "ntInt": { "0": 4 } }
+    },
+    "str.substr\t+": {
+      "word-count": {
+        "ntString": { "str._arg_1": 1, "str._arg_0": 10 },
+        "ntInt": { "str.indexof": 1, "0": 3 }
+      }
+    },
     "str.substr": {
       "word-count": {
-        "ntString": {
-          "str._arg_1": 2,
-          "str._arg_0": 46,
-          "str.++": 1,
-          "\"Dr.\"": 4
+        "ntInt": {
+          "str.len": 7,
+          "str.indexof": 16,
+          "int._arg_1": 1,
+          "3": 17,
+          "2": 4,
+          "-": 4,
+          "+": 4
         }
       }
     },
     "str.replace\tstr.substr": {
-      "word-count": { "ntString": { "\" \"": 1 } }
+      "word-count": { "ntString": { "str._arg_0": 1 } }
     },
     "str.replace\tstr.replace": {
-      "word-count": {
-        "ntString": { "str._arg_1": 1, "str.++": 1, "\"\"": 1, "\" \"": 1 },
-        "ntInt": { "-": 5 }
-      }
+      "word-count": { "ntString": { "str._arg_0": 1 } }
     },
     "str.replace\tstr._arg_1": {
-      "word-count": { "ntString": { "\"\"": 2 } }
+      "word-count": { "ntString": { "str.replace": 1, "str._arg_0": 1 } }
     },
     "str.replace\tstr._arg_0": {
+      "word-count": { "ntString": { "\"that\"": 1 } }
+    },
+    "str.replace\tstr.++": {
+      "word-count": { "ntString": { "str.replace": 1 }, "ntInt": { "-": 4 } }
+    },
+    "str.replace\t2": { "word-count": { "ntString": { "str._arg_0": 1 } } },
+    "str.replace\t1": { "word-count": { "ntInt": { "2": 1 } } },
+    "str.replace\t-": {
+      "word-count": {
+        "ntString": { "str.replace": 5, "str._arg_0": 10, "\" \"": 2 }
+      }
+    },
+    "str.replace\t\"US\"": { "word-count": { "ntString": { "\"CAN\"": 1 } } },
+    "str.replace\t\"CAN\"": {
+      "word-count": { "ntString": { "str._arg_0": 1 } }
+    },
+    "str.replace\t\".\"": { "word-count": { "ntInt": { "-": 8 } } },
+    "str.replace\t\"\"": {
       "word-count": {
         "ntString": {
-          "str.substr": 1,
           "str.replace": 1,
-          "str._arg_1": 1,
-          "\"CAN\"": 1,
-          "\"\"": 1,
-          "\" \"": 1
+          "str._arg_1": 2,
+          "str._arg_0": 1,
+          "str.++": 1
         },
-        "ntInt": { "2": 1, "-": 10 }
+        "ntInt": { "-": 3 }
       }
     },
-    "str.replace\tstr.++": { "word-count": { "ntString": { "\"\"": 1 } } },
-    "str.replace\t2": { "word-count": { "ntInt": { "1": 1 } } },
-    "str.replace\t-": {
-      "word-count": { "ntString": { "str.++": 4, "\".\"": 8, "\"\"": 3 } }
+    "str.replace\t\" \"": {
+      "word-count": {
+        "ntString": { "str.substr": 1, "str.replace": 1, "str._arg_0": 1 }
+      }
     },
-    "str.replace\t\"that\"": {
-      "word-count": { "ntString": { "str._arg_0": 1 } }
-    },
-    "str.replace\t\"CAN\"": { "word-count": { "ntString": { "\"US\"": 1 } } },
-    "str.replace\t\" \"": { "word-count": { "ntInt": { "-": 2 } } },
     "str.replace": {
       "word-count": {
-        "ntString": { "str.replace": 8, "str._arg_0": 16, "\"that\"": 1 }
+        "ntString": {
+          "str.++": 4,
+          "\"US\"": 1,
+          "\".\"": 8,
+          "\"\"": 8,
+          "\" \"": 1
+        },
+        "ntInt": { "1": 1, "-": 2 }
       }
-    },
-    "str.prefixof\tstr._arg_2": {
-      "word-count": { "ntString": { "str._arg_1": 1 } }
     },
     "str.prefixof\tstr._arg_1": {
-      "word-count": { "ntString": { "str._arg_0": 3 } }
+      "word-count": { "ntString": { "str._arg_2": 1 } }
     },
-    "str.prefixof\t0": { "word-count": { "ntString": { "str._arg_0": 1 } } },
-    "str.prefixof\t\"C0\"": {
-      "word-count": { "ntString": { "str._arg_0": 1 } }
-    },
-    "str.prefixof": {
+    "str.prefixof\tstr._arg_0": {
       "word-count": {
-        "ntString": { "str._arg_2": 1, "str._arg_1": 3, "\"C0\"": 1 },
+        "ntString": { "str._arg_1": 3, "\"C0\"": 1 },
         "ntInt": { "0": 1 }
       }
+    },
+    "str.prefixof": {
+      "word-count": { "ntString": { "str._arg_1": 1, "str._arg_0": 5 } }
     },
     "str.len": {
       "word-count": {
@@ -124,159 +138,171 @@
         }
       }
     },
-    "str.ite\tstr.suffixof": {
-      "word-count": { "ntString": { "str._arg_1": 8 } }
+    "str.ite\tstr._arg_2": {
+      "word-count": { "ntBool": { "str.prefixof": 1 } }
     },
-    "str.ite\tstr.prefixof": {
+    "str.ite\tstr._arg_1": {
       "word-count": {
-        "ntString": { "str._arg_2": 1, "str._arg_1": 1, "str._arg_0": 1 }
+        "ntString": { "str._arg_0": 1 },
+        "ntBool": { "str.suffixof": 8, "str.prefixof": 1, "str.contains": 1 }
       }
     },
-    "str.ite\tstr.contains": {
-      "word-count": { "ntString": { "str._arg_1": 1 } }
-    },
-    "str.ite\tstr._arg_2": { "word-count": { "ntString": { "str.++": 1 } } },
-    "str.ite\tstr._arg_1": {
-      "word-count": { "ntString": { "str._arg_0": 2, "str.++": 8 } }
-    },
     "str.ite\tstr._arg_0": {
-      "word-count": { "ntString": { "str._arg_1": 1 } }
+      "word-count": {
+        "ntString": { "str._arg_1": 2 },
+        "ntBool": { "str.prefixof": 1 }
+      }
+    },
+    "str.ite\tstr.++": {
+      "word-count": { "ntString": { "str._arg_2": 1, "str._arg_1": 8 } }
     },
     "str.ite": {
       "word-count": {
-        "ntBool": { "str.suffixof": 8, "str.prefixof": 3, "str.contains": 1 }
+        "ntString": { "str._arg_1": 1, "str._arg_0": 2, "str.++": 9 }
       }
     },
-    "str.indexof\tstr.at": { "word-count": { "ntInt": { "1": 1 } } },
-    "str.indexof\tstr._arg_1": {
-      "word-count": { "ntString": { "\"_\"": 1 }, "ntInt": { "1": 1 } }
+    "str.indexof\tstr.len": { "word-count": { "ntString": { "\" \"": 1 } } },
+    "str.indexof\tstr.at": {
+      "word-count": { "ntString": { "str._arg_0": 1 } }
     },
-    "str.indexof\tstr._arg_0": {
+    "str.indexof\tstr._arg_1": {
+      "word-count": { "ntString": { "str._arg_0": 1 } }
+    },
+    "str.indexof\t1": {
       "word-count": {
         "ntString": {
           "str.at": 1,
           "str._arg_1": 1,
-          "\"overhead\"": 1,
+          "\"|\"": 1,
+          "\"_\"": 1,
           "\"/n\"": 1,
           "\".\"": 1,
-          "\" \"": 18
+          "\" \"": 5
         },
         "ntInt": { "0": 1, "-": 1 }
       }
     },
-    "str.indexof\tstr.++": { "word-count": { "ntString": { "\"|\"": 1 } } },
-    "str.indexof\t0": { "word-count": { "ntInt": { "1": 1 } } },
-    "str.indexof\t-": { "word-count": { "ntInt": { "1": 1 } } },
-    "str.indexof\t\"|\"": { "word-count": { "ntInt": { "1": 1 } } },
-    "str.indexof\t\"overhead\"": { "word-count": { "ntInt": { "0": 1 } } },
-    "str.indexof\t\"_\"": { "word-count": { "ntInt": { "1": 1 } } },
-    "str.indexof\t\"/n\"": { "word-count": { "ntInt": { "1": 1 } } },
-    "str.indexof\t\".\"": { "word-count": { "ntInt": { "1": 1 } } },
+    "str.indexof\t0": {
+      "word-count": {
+        "ntString": { "str._arg_0": 1, "\"overhead\"": 1, "\" \"": 12 }
+      }
+    },
+    "str.indexof\t-": { "word-count": { "ntString": { "str._arg_0": 1 } } },
+    "str.indexof\t\"|\"": { "word-count": { "ntString": { "str.++": 1 } } },
+    "str.indexof\t\"overhead\"": {
+      "word-count": { "ntString": { "str._arg_0": 1 } }
+    },
+    "str.indexof\t\"_\"": {
+      "word-count": { "ntString": { "str._arg_1": 1 } }
+    },
+    "str.indexof\t\"/n\"": {
+      "word-count": { "ntString": { "str._arg_0": 1 } }
+    },
+    "str.indexof\t\".\"": {
+      "word-count": { "ntString": { "str._arg_0": 1 } }
+    },
     "str.indexof\t\" \"": {
-      "word-count": { "ntInt": { "str.len": 1, "1": 5, "0": 12 } }
+      "word-count": { "ntString": { "str._arg_0": 18 } }
     },
     "str.indexof": {
-      "word-count": {
-        "ntString": { "str._arg_1": 1, "str._arg_0": 25, "str.++": 1 }
-      }
+      "word-count": { "ntInt": { "str.len": 1, "1": 13, "0": 13 } }
     },
-    "str.contains\tstr.replace": { "word-count": { "ntInt": { "1": 1 } } },
+    "str.contains\tstr._arg_3": {
+      "word-count": { "ntString": { "str._arg_0": 1 } }
+    },
+    "str.contains\tstr._arg_2": {
+      "word-count": { "ntString": { "str._arg_1": 1, "str._arg_0": 1 } }
+    },
     "str.contains\tstr._arg_1": {
-      "word-count": { "ntString": { "str._arg_2": 1 } }
+      "word-count": { "ntString": { "str._arg_0": 2 } }
     },
     "str.contains\tstr._arg_0": {
-      "word-count": {
-        "ntString": {
-          "str._arg_3": 1,
-          "str._arg_2": 1,
-          "str._arg_1": 2,
-          "int.to.str": 1,
-          "\"9999999\"": 1
-        },
-        "ntInt": { "0": 1 }
-      }
+      "word-count": { "ntString": { "str.++": 1 } }
     },
-    "str.contains\tstr.++": {
+    "str.contains\tint.to.str": {
+      "word-count": { "ntString": { "str._arg_0": 1 } }
+    },
+    "str.contains\t1": { "word-count": { "ntString": { "str.replace": 1 } } },
+    "str.contains\t0": { "word-count": { "ntString": { "str._arg_0": 1 } } },
+    "str.contains\t\"9999999\"": {
       "word-count": { "ntString": { "str._arg_0": 1 } }
     },
     "str.contains": {
       "word-count": {
         "ntString": {
-          "str.replace": 1,
-          "str._arg_1": 1,
-          "str._arg_0": 7,
-          "str.++": 1
-        }
+          "str._arg_3": 1,
+          "str._arg_2": 2,
+          "str._arg_1": 2,
+          "str._arg_0": 1,
+          "int.to.str": 1,
+          "\"9999999\"": 1
+        },
+        "ntInt": { "1": 1, "0": 1 }
       }
     },
-    "str.at\tstr._arg_1": { "word-count": { "ntInt": { "0": 5 } } },
-    "str.at\tstr._arg_0": { "word-count": { "ntInt": { "0": 10 } } },
-    "str.at\tstr.++": { "word-count": { "ntInt": { "int._arg_1": 1 } } },
-    "str.at": {
-      "word-count": {
-        "ntString": { "str._arg_1": 5, "str._arg_0": 10, "str.++": 1 }
-      }
+    "str.at\tint._arg_1": { "word-count": { "ntString": { "str.++": 1 } } },
+    "str.at\t0": {
+      "word-count": { "ntString": { "str._arg_1": 5, "str._arg_0": 10 } }
     },
-    "str.++\tstr.substr": { "word-count": { "ntString": { "str.++": 4 } } },
-    "str.++\tstr.at": {
-      "word-count": {
-        "ntString": { "str._arg_1": 1, "str._arg_0": 1, "\".\"": 4 }
-      }
+    "str.at": { "word-count": { "ntInt": { "int._arg_1": 1, "0": 15 } } },
+    "str.++\tstr.substr": { "word-count": { "ntString": { "\" \"": 4 } } },
+    "str.++\tstr.replace": { "word-count": { "ntString": { "\"(\"": 4 } } },
+    "str.++\tstr.ite": {
+      "word-count": { "ntString": { "str._arg_1": 1, "str.++": 4 } }
+    },
+    "str.++\tstr.at": { "word-count": { "ntString": { "str.++": 8 } } },
+    "str.++\tstr._arg_2": {
+      "word-count": { "ntString": { "str.++": 2, "\" \"": 1 } }
     },
     "str.++\tstr._arg_1": {
-      "word-count": {
-        "ntString": { "str.ite": 1, "str.++": 8, "\",\"": 4, "\" \"": 4 }
-      }
+      "word-count": { "ntString": { "str.at": 1, "str.++": 14 } }
     },
     "str.++\tstr._arg_0": {
-      "word-count": {
-        "ntString": {
-          "str.++": 5,
-          "\"|\"": 1,
-          "\"/n\"": 1,
-          "\",\"": 4,
-          "\" \"": 9
-        }
-      }
+      "word-count": { "ntString": { "str.at": 1, "str.++": 4, "\" \"": 2 } }
     },
     "str.++\tstr.++": {
       "word-count": {
         "ntString": {
-          "str.ite": 4,
-          "str.at": 8,
-          "str._arg_2": 2,
-          "str._arg_1": 14,
-          "str._arg_0": 4,
-          "\"yellow\"": 1,
-          "\"orange\"": 1,
-          "\"_acme.com\"": 1,
-          "\"_\"": 1,
-          "\"USA\"": 8,
-          "\"/n\"": 1,
-          "\".\"": 8,
-          "\" \"": 12
+          "str.substr": 4,
+          "str._arg_1": 8,
+          "str._arg_0": 5,
+          "\".\"": 4,
+          "\",\"": 2,
+          "\" \"": 1
         }
       }
     },
     "str.++\tint.to.str": {
       "word-count": { "ntString": { "int.to.str": 1 } }
     },
+    "str.++\t\"|\"": { "word-count": { "ntString": { "str._arg_0": 1 } } },
+    "str.++\t\"yellow\"": { "word-count": { "ntString": { "str.++": 1 } } },
     "str.++\t\"ssp.\"": { "word-count": { "ntString": { "\"ssp.\"": 1 } } },
-    "str.++\t\"pink\"": { "word-count": { "ntString": { "\"blue\"": 1 } } },
-    "str.++\t\".\"": { "word-count": { "ntString": { "str.++": 4 } } },
-    "str.++\t\",\"": {
-      "word-count": { "ntString": { "str.++": 2, "\" \"": 12 } }
+    "str.++\t\"orange\"": { "word-count": { "ntString": { "str.++": 1 } } },
+    "str.++\t\"blue\"": { "word-count": { "ntString": { "\"pink\"": 1 } } },
+    "str.++\t\"_acme.com\"": {
+      "word-count": { "ntString": { "str.++": 1 } }
     },
-    "str.++\t\")\"": { "word-count": { "ntString": { "\" \"": 4 } } },
-    "str.++\t\"(\"": { "word-count": { "ntString": { "str.replace": 4 } } },
+    "str.++\t\"_\"": { "word-count": { "ntString": { "str.++": 1 } } },
+    "str.++\t\"USA\"": { "word-count": { "ntString": { "str.++": 8 } } },
+    "str.++\t\"US\"": { "word-count": { "ntString": { "\" \"": 1 } } },
+    "str.++\t\"/n\"": {
+      "word-count": { "ntString": { "str._arg_0": 1, "str.++": 1 } }
+    },
+    "str.++\t\".\"": {
+      "word-count": { "ntString": { "str.at": 4, "str.++": 8 } }
+    },
+    "str.++\t\",\"": {
+      "word-count": { "ntString": { "str._arg_1": 4, "str._arg_0": 4 } }
+    },
     "str.++\t\" \"": {
       "word-count": {
         "ntString": {
-          "str.substr": 4,
-          "str._arg_2": 1,
-          "str._arg_0": 2,
-          "str.++": 1,
-          "\"US\"": 1
+          "str._arg_1": 4,
+          "str._arg_0": 9,
+          "str.++": 12,
+          "\",\"": 12,
+          "\")\"": 4
         }
       }
     },
@@ -284,18 +310,27 @@
       "word-count": {
         "ntString": {
           "str.substr": 4,
-          "str.at": 6,
-          "str._arg_1": 17,
-          "str._arg_0": 20,
-          "str.++": 65,
+          "str.replace": 4,
+          "str.ite": 5,
+          "str.at": 8,
+          "str._arg_2": 3,
+          "str._arg_1": 15,
+          "str._arg_0": 7,
+          "str.++": 24,
           "int.to.str": 1,
+          "\"|\"": 1,
+          "\"yellow\"": 1,
           "\"ssp.\"": 1,
-          "\"pink\"": 1,
-          "\".\"": 4,
-          "\",\"": 14,
-          "\")\"": 4,
-          "\"(\"": 4,
-          "\" \"": 9
+          "\"orange\"": 1,
+          "\"blue\"": 1,
+          "\"_acme.com\"": 1,
+          "\"_\"": 1,
+          "\"USA\"": 8,
+          "\"US\"": 1,
+          "\"/n\"": 2,
+          "\".\"": 12,
+          "\",\"": 8,
+          "\" \"": 41
         }
       }
     },
@@ -304,57 +339,55 @@
         "ntInt": { "str.len": 1, "str.indexof": 1, "int._arg_0": 1, "1": 1 }
       }
     },
-    "int.ite\tstr.suffixof": {
-      "word-count": { "ntInt": { "1": 1, "+": 1 } }
-    },
-    "int.ite\tstr.prefixof": { "word-count": { "ntInt": { "+": 1 } } },
-    "int.ite\tstr.contains": {
-      "word-count": { "ntInt": { "int.ite": 1, "+": 1 } }
-    },
+    "int.ite\tstr.indexof": { "word-count": { "ntInt": { "int.ite": 1 } } },
     "int.ite\tint.ite": {
-      "word-count": { "ntInt": { "str.indexof": 1, "+": 1 } }
+      "word-count": {
+        "ntInt": { "+": 2 },
+        "ntBool": { "str.contains": 1, "=": 1 }
+      }
     },
-    "int.ite\t=": { "word-count": { "ntInt": { "int.ite": 1 } } },
-    "int.ite\t1": { "word-count": { "ntInt": { "-1": 1 } } },
-    "int.ite\t+": { "word-count": { "ntInt": { "int.ite": 2, "+": 1 } } },
+    "int.ite\t1": { "word-count": { "ntBool": { "str.suffixof": 1 } } },
+    "int.ite\t-1": { "word-count": { "ntInt": { "1": 1 } } },
+    "int.ite\t+": {
+      "word-count": {
+        "ntInt": { "int.ite": 1, "+": 1 },
+        "ntBool": { "str.suffixof": 1, "str.prefixof": 1, "str.contains": 1 }
+      }
+    },
     "int.ite": {
       "word-count": {
-        "ntBool": {
-          "str.suffixof": 2,
-          "str.prefixof": 1,
-          "str.contains": 2,
-          "=": 1
+        "ntInt": { "str.indexof": 1, "int.ite": 2, "-1": 1, "+": 2 }
+      }
+    },
+    "=\t1": { "word-count": { "ntInt": { "+": 1 } } },
+    "=\t-1": { "word-count": { "ntInt": { "str.indexof": 1 } } },
+    "=": { "word-count": { "ntInt": { "1": 1, "-1": 1 } } },
+    "-\tstr.len": { "word-count": { "ntInt": { "3": 1 } } },
+    "-\tint._arg_2": { "word-count": { "ntInt": { "str.len": 1 } } },
+    "-\t3": { "word-count": { "ntInt": { "str.len": 8 } } },
+    "-": {
+      "word-count": { "ntInt": { "str.len": 1, "int._arg_2": 1, "3": 8 } }
+    },
+    "+\tint._arg_1": { "word-count": { "ntInt": { "-1": 2 } } },
+    "+\t3": { "word-count": { "ntInt": { "5": 4, "3": 1 } } },
+    "+\t1": {
+      "word-count": {
+        "ntInt": {
+          "str.len": 1,
+          "str.indexof": 5,
+          "int.ite": 1,
+          "1": 6,
+          "-": 1,
+          "+": 5
         }
       }
     },
-    "=\tstr.indexof": { "word-count": { "ntInt": { "-1": 1 } } },
-    "=\t+": { "word-count": { "ntInt": { "1": 1 } } },
-    "=": { "word-count": { "ntInt": { "str.indexof": 1, "+": 1 } } },
-    "-\tstr.len": { "word-count": { "ntInt": { "int._arg_2": 1, "3": 8 } } },
-    "-\t3": { "word-count": { "ntInt": { "str.len": 1 } } },
-    "-": { "word-count": { "ntInt": { "str.len": 9, "3": 1 } } },
-    "+\tstr.len": { "word-count": { "ntInt": { "1": 1, "-1": 1 } } },
-    "+\tstr.indexof": { "word-count": { "ntInt": { "1": 5, "-1": 2 } } },
-    "+\tint.ite": { "word-count": { "ntInt": { "1": 1 } } },
-    "+\t5": { "word-count": { "ntInt": { "3": 4 } } },
-    "+\t3": { "word-count": { "ntInt": { "3": 1 } } },
-    "+\t1": { "word-count": { "ntInt": { "1": 6 } } },
-    "+\t-1": { "word-count": { "ntInt": { "int._arg_1": 2 } } },
-    "+\t-": { "word-count": { "ntInt": { "1": 1 } } },
-    "+\t+": { "word-count": { "ntInt": { "1": 5, "-1": 2 } } },
+    "+\t-1": {
+      "word-count": { "ntInt": { "str.len": 1, "str.indexof": 2, "+": 2 } }
+    },
     "+": {
       "word-count": {
-        "ntInt": {
-          "str.len": 2,
-          "str.indexof": 7,
-          "int.ite": 1,
-          "5": 4,
-          "3": 1,
-          "1": 6,
-          "-1": 2,
-          "-": 1,
-          "+": 7
-        }
+        "ntInt": { "int._arg_1": 2, "3": 5, "1": 19, "-1": 5 }
       }
     }
   },
