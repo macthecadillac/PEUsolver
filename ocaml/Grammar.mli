@@ -43,6 +43,3 @@ val build_solution_ast : t Map.t -> Sexp.t list -> (t Tree.t, [`Msg of string]) 
 
 (** [is_hole successorMap rule] checks if the production rule is a hole *)
 val is_hole : t list Map.t -> t -> bool
-
-(** Pretty printer for ASTs *)
-val ast_pp : t Tree.t printer

@@ -16,6 +16,9 @@ type t = { counts : count M.t;
            ntMap : Grammar.t M.t;
            probMap : float M.t }
 
+let logBase2 = log 2.
+let log2 a = log a  /. logBase2
+
 let pp fmt t =
   Format.fprintf fmt "Counts: %a\nprobMap: %a\nntMap: %a"
   (M.pp Grammar.pp count_pp) t.counts
@@ -102,7 +105,8 @@ let rule_cost pcfg rule =
     let count = Option.get_exn @@ M.get ntType pcfg.counts in
     let default = Float.(1. /. (of_int count.vocab +. of_int count.wordCount)) in
     (* let default = 0.001 in *)
-    Option.get_or ~default (M.get rule pcfg.probMap) in
+    let prob = Option.get_or ~default (M.get rule pcfg.probMap) in
+    -. log2 prob in
   (* if a "rule" isn't found in ntMap, it is a hole which should have a cost of 0 *)
   Option.get_or ~default:0. costOpt
 
@@ -111,3 +115,20 @@ let ast_cost pcfg _ t =
       s, [] -> rule_cost pcfg s (* terminals *)
     | s, l -> List.fold_left (+.) (rule_cost pcfg s) l in
   Tree.fold (curry aux) t
+
+let compute_heuristic succMap pcfg =
+  let rec aux map =
+    let open List.Infix in
+    let pairs =
+      let* rule, p = Grammar.Map.to_list map in
+      let+ nextRule = Grammar.Map.get_or ~default:[] rule succMap in
+      let p' = rule_cost pcfg nextRule in
+      rule, p *. p' in
+    let map' = Grammar.Map.of_list pairs in
+    if Grammar.Map.equal (fun a b -> abs_float (a -. b) <. 0.0001) map map'
+    then map'
+    else aux map' in
+  Grammar.Map.to_list succMap
+  |> List.map (fun (rule, _) -> rule, 0.)
+  |> Grammar.Map.of_list
+  |> aux

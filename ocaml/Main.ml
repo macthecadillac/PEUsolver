@@ -22,8 +22,8 @@ end
 module type R = sig val run : int -> order -> unit end
 
 module Enumerate (P : Sig.P) (Env : E) : R = struct
-  let make_struct successorsMap ast_cost = (module struct
-    let successorsMap = successorsMap
+  let make_struct succMap ast_cost = (module struct
+    let succMap = succMap
     let ast_cost = ast_cost
   end : Search.ENV)
 
@@ -32,13 +32,13 @@ module Enumerate (P : Sig.P) (Env : E) : R = struct
     let result =
       let specDir = baseDir ^ "benchmark/string/train/dr-name.sl" in
       let* fullSpec = Grammar.parse_spec specDir in
-      let* successorsMap = Grammar.succession_map fullSpec in
+      let* succMap = Grammar.succession_map fullSpec in
       let* ntMap = Grammar.rule_nttype_map fullSpec in
       let* json = JSON.parse @@ Printf.sprintf "%sbenchmark/%s.json" baseDir Env.name in
       let+ p_raw = P.decode json in
       let p = P.compile ntMap p_raw in
       let ast_cost = P.ast_cost p Env.tcondP in
-      let env = make_struct successorsMap ast_cost in
+      let env = make_struct succMap ast_cost in
       let orderM =
         match order with
           AS -> (module SearchOrder.AStar : Search.PATHORDER)
@@ -47,7 +47,9 @@ module Enumerate (P : Sig.P) (Env : E) : R = struct
       S.sequence
       |> Seq.map (fun s -> ast_cost s, s)
       |> Seq.take n
-      |> Seq.iter (fun (a, b) -> Format.printf "%f\t%a\n" a Grammar.ast_pp b) in
+      |> Seq.iter (fun (a, b) ->
+          Format.printf "%f\t%a\n" a AST.pp b;
+          Format.print_flush ()) in
     print_result result
 end
 

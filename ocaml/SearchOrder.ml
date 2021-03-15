@@ -15,7 +15,7 @@ module FAStar (E : Search.ENV) = struct
   let rec compare a b =
     let cost l =
       let f s =
-        if Grammar.is_hole E.successorsMap s then 0.  (* holes have zero cost *)
+        if Grammar.is_hole E.succMap s then 0.  (* holes have zero cost *)
         else
           let ast =
             match List.rev l with
@@ -27,5 +27,7 @@ module FAStar (E : Search.ENV) = struct
                 tl in
           E.ast_cost ast in
       List.map (f % snd) l |> List.fold_left (+.) 0. in
-    Float.compare (cost b) (cost a)
+    let c = Float.compare (cost b) (cost a) in
+    (* Format.printf "%i\t" c; *)
+    c
 end

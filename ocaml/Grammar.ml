@@ -181,16 +181,3 @@ let build_solution_ast ntMap (spec : Sexp.t list) =
 
 let is_hole prodMap term =
   not @@ List.is_empty @@ Option.get_exn @@ Map.get term prodMap
-
-let str_pp s fmt () = Format.fprintf fmt "%s" s
-
-let ast_pp fmt ast =
-  let list_pp =
-    List.pp ~pp_sep:(str_pp ", ")
-            ~pp_start:(str_pp "")
-            ~pp_stop:(str_pp "")
-            (fun fmt s -> Format.fprintf fmt "%s" s) in
-  let to_string = function
-      s, [] -> Format.sprintf "%a" pp s
-    | s, l -> Format.sprintf "%s(%a)" s list_pp l in
-  Format.fprintf fmt "%s" @@ Tree.fold (curry to_string) ast

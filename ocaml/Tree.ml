@@ -4,6 +4,10 @@ type 'a t = Node of 'a * 'a t list
 
 type 'a printer = Format.formatter -> 'a -> unit
 
+let rec equal eq t1 t2 =
+  match t1, t2 with
+    Node (a1, l1), Node (a2, l2) -> eq a1 a2 && List.equal (equal eq) l1 l2
+
 let rec map f (Node (a, l)) = Node (f a, List.map (map f) l)
 
 (* postorder *)
