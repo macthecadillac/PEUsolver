@@ -4,7 +4,7 @@ open Cmdliner
 
 let baseDir = "/home/mac/Documents/code/cse291/"
 
-type cmd = EnumPCFG | TrainPHOG | TrainPCFG | EnumPHOG | PrintHelp
+type cmd = EnumPCFG | TrainPHOG | TrainPCFG | EnumPHOG | RunPCFG | RunPHOG | PrintHelp
 type mode = PCFG | PHOG
 type order = AS | FAS
 
@@ -53,6 +53,58 @@ module Enumerate (P : Sig.P) (Env : E) : R = struct
     print_result result
 end
 
+module Synthesize (P : Sig.P) (Env : E) : R = struct
+  let make_struct succMap ast_cost = (module struct
+    let succMap = succMap
+    let ast_cost = ast_cost
+  end : Search.ENV)
+
+  module V = AST.Value
+
+  let eval ast = function
+      [arg0] -> AST.eval ~arg0 ast
+    | [arg0; arg1] -> AST.eval ~arg0 ~arg1 ast
+    | [arg0; arg1; arg2] -> AST.eval ~arg0 ~arg1 ~arg2 ast
+    | [arg0; arg1; arg2; arg3] -> AST.eval ~arg0 ~arg1 ~arg2 ~arg3 ast
+    | _ -> raise (Invalid_argument "Not a supported arity")
+
+  let verify ast (args, res) = V.equal (eval ast args) res
+
+  let run n order =
+    let open Result in
+    let result =
+      let specDir = baseDir ^ "benchmark/string/train/dr-name.sl" in
+      let* fullSpec = Grammar.parse_spec specDir in
+      let* constraints = Grammar.parse_constraints fullSpec in
+      let cs =
+        let open List.Infix in
+        let+ args, res = constraints in
+        List.map (fun arg -> V.Str arg) args, V.Str res in
+      let* succMap = Grammar.succession_map fullSpec in
+      let* ntMap = Grammar.rule_nttype_map fullSpec in
+      let* json = JSON.parse @@ Printf.sprintf "%sbenchmark/%s.json" baseDir Env.name in
+      let+ p_raw = P.decode json in
+      let p = P.compile ntMap p_raw in
+      let ast_cost = P.ast_cost p Env.tcondP in
+      let env = make_struct succMap ast_cost in
+      let orderM =
+        match order with
+          AS -> (module SearchOrder.AStar : Search.PATHORDER)
+        | FAS -> (module SearchOrder.FAStar (val env) : Search.PATHORDER) in
+      let (module S) = (module Search.Make (val env) (val orderM) : Search.S) in
+      S.sequence
+      |> Seq.take_while (fun s -> not @@ List.for_all (verify s) cs)
+      |> Seq.iteri (fun i ast ->
+          Format.printf "%i: %a\n" (i + 1) AST.pp ast;
+          List.iter (fun (args, res) ->
+            let res' = eval ast args in
+            let list_pp fmt = List.iter (fun s -> Format.fprintf fmt "%a " V.pp s) in
+            Format.printf "Args: %a\t\nEval: %a\t\nExpected: %a\n\n" list_pp args V.pp res' V.pp res)
+          cs;
+          Format.print_flush ()) in
+    print_result result
+end
+
 module type T = sig val run : unit -> unit end
 
 module Train (P : Sig.P) (Env: E) : T = struct
@@ -93,6 +145,15 @@ let exe n order = function
       let env = (module struct let tcondP = p let name = "phog" end : E) in
       let (module T) = (module Train (PHOG) (val env) : T) in
       T.run ()
+  | RunPCFG ->
+      let env = (module struct let tcondP = [] let name = "pcfg" end : E) in
+      let (module S) = (module Synthesize (PCFG) (val env) : R) in
+      S.run n order
+  | RunPHOG ->
+      let p = TCOND.[M Right; W WriteValue; M Up; W WriteValue] in
+      let env = (module struct let tcondP = p let name = "phog" end : E) in
+      let (module S) = (module Synthesize (PHOG) (val env) : R) in
+      S.run n order
   | PrintHelp ->
       let msg = "A required argument is missing. "
         ^ "See the help page for more information." in
@@ -100,9 +161,12 @@ let exe n order = function
 
 let man = [
   `S Manpage.s_arguments;
+  `Pre "train-pcfg\tTrain PCFG from the data."; `Noblank;
   `Pre "train-phog\tTrain PHOG using the given TCOND program."; `Noblank;
-  `Pre "run-pcfg\t\tRun the enumerator with the default PCFG."; `Noblank;
-  `Pre "run-phog\t\tRun the enumerator with the trained PHOG.";
+  `Pre "enum-pcfg\t\tEnumerate candidates with the trained PCFG model."; `Noblank;
+  `Pre "enum-phog\t\tEnumerate candidates with the trained PHOG model."; `Noblank;
+  `Pre "run-pcfg\t\tRun a simple PBE synthesizer on a given spec with the trained PCFG model."; `Noblank;
+  `Pre "run-phog\t\tRun a simple PBE synthesizer on a given spec with the trained PHOG model.";
 ]
 
 let info =
@@ -120,7 +184,8 @@ let order =
 
 let runMode =
   let cmds = ["train-phog", TrainPHOG; "train-pcfg", TrainPCFG;
-              "enum-pcfg", EnumPCFG; "enum-phog", EnumPHOG] in
+              "enum-pcfg", EnumPCFG; "enum-phog", EnumPHOG;
+              "run-pcfg", RunPCFG; "run-phog", RunPHOG] in
   Arg.(value @@ pos 0 (enum cmds) PrintHelp @@ info [])
 
 let () =

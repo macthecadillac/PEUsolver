@@ -179,5 +179,22 @@ let build_solution_ast ntMap (spec : Sexp.t list) =
     | _ -> Error (`Msg "Malformed spec"))
   (Ok ast) args
 
+let parse_constraints (spec : Sexp.t list) =
+  let open Result.Infix in
+  let filter_constraints = function `List (`Atom "constraint"::_) -> true | _ -> false in
+  let* constraints = List.filter filter_constraints spec
+    |> List.map sexp_list |> Result.flatten_l in
+  let parse_args fargs =
+    let* args = sexp_list fargs in
+    match args with
+      `Atom "f"::s -> List.map sexp_atom s |> Result.flatten_l
+    | _ -> Error (`Msg "Malformed constraint") in
+  let parse = function
+      [`Atom "constraint"; `List [`Atom "="; fargs; `Atom res]] ->
+        let+ args = parse_args fargs in
+        args, res
+    | _ -> Error (`Msg "Malformed constraint") in
+  List.map parse constraints |> Result.flatten_l
+
 let is_hole prodMap term =
   not @@ List.is_empty @@ Option.get_exn @@ Map.get term prodMap

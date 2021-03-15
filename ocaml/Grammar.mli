@@ -41,5 +41,9 @@ val merge_rule_nttype_maps : t Map.t -> t Map.t -> (t Map.t, [`Msg of string]) r
     spec *)
 val build_solution_ast : t Map.t -> Sexp.t list -> (t Tree.t, [`Msg of string]) result
 
+(* [parse_constraints specs] returns a list of tuples that are pairs of
+   arguments and expected results **)
+val parse_constraints : Sexp.t list -> ((string list * string) list, [`Msg of string]) result
+
 (** [is_hole successorMap rule] checks if the production rule is a hole *)
 val is_hole : t list Map.t -> t -> bool
