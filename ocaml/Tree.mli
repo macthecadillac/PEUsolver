@@ -4,6 +4,9 @@ type 'a t = Node of 'a * 'a t list
 (** The printer type *)
 type 'a printer = Format.formatter -> 'a -> unit
 
+(** [equal a b] returns [true] if [a] and [b] are equal *)
+val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+
 (** [map f t] maps function [f] over a tree structure [t] *)
 val map : ('a -> 'b) -> 'a t -> 'b t
 

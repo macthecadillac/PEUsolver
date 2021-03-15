@@ -9,7 +9,7 @@ module type PATHORDER = sig
 end
 
 module type ENV = sig
-  val successorsMap : Grammar.t list Grammar.Map.t
+  val succMap : Grammar.t list Grammar.Map.t
   val ast_cost : Grammar.t Tree.t -> float
 end
 
@@ -27,14 +27,14 @@ module Make (E : ENV) (O : PATHORDER) : S = struct
     type t = float * Paths.t * Grammar.t Tree.t
     let compare (a, _, _) (b, _, _) = Float.compare a b
     let pp fmt (f, p, t) =
-      Format.fprintf fmt "Cost: %f AST: %a" f Grammar.ast_pp t
+      Format.fprintf fmt "Cost: %f AST: %a" f AST.pp t
   end
 
   and H : PairingHeap.S with type elt = T.t = PairingHeap.Make (T)
 
   let is_ground (_, ps, _) = Paths.is_empty ps
 
-  let successors = Option.get_exn % flip Grammar.Map.get E.successorsMap
+  let successors = Option.get_exn % flip Grammar.Map.get E.succMap
 
   let init = successors Grammar.init
 
@@ -43,22 +43,25 @@ module Make (E : ENV) (O : PATHORDER) : S = struct
     let expand s =
       let l = successors s in
       pure <$> (mapi Pair.make l), Tree.Node (s, Tree.return <$> l) in
-    let rec go acc (i, s) n p = function
+    (* find the i-th node and call new_paths *)
+    let rec traverse acc (i, rule) n pair = function
         [] -> raise (Invalid_argument "Index out of bounds")
-      | h'::t' when n <> i -> go (h'::acc) (i, s) (n + 1) p t'
+      | h'::t' when n <> i -> traverse (h'::acc) (i, rule) (n + 1) pair t'
       | h'::t' ->
-          let+ p', n = aux p h' in
-          cons (i, s) <$> p', rev_append acc (n::t')
-    and aux p t =
+          let+ pair', n = new_paths pair h' in
+          cons (i, rule) <$> pair', rev_append acc (n::t')
+    and new_paths p t =
       match p, t with
-        [], Tree.Node (a, []) when Grammar.is_hole E.successorsMap a -> expand <$> successors a
-      | [], Tree.Node (a, []) -> [expand a]
-      | (i, s)::t, Tree.Node (a, l) -> let+ ps, ts = go [] (i, s) 0 t l in ps, Tree.Node (a, ts)
+        [], Tree.Node (a, []) when Grammar.is_hole E.succMap a -> expand <$> successors a
+      | [], Tree.Node (a, []) -> [expand a]  (* wouldn't that just return [[], node]? *)
+      | (i, rule)::t, Tree.Node (a, l) ->
+          let+ ps, ts = traverse [] (i, a) 0 t l in
+          ps, Tree.Node (a, ts)
       | _ -> raise (Invalid_argument "Inconsistent path/tree") in
     let path = Paths.find_min_exn h in
-    let pathTl = tl path in
+    let pathtl = tl path in  (* head is always 0/the root node *)
     let+ ps, t' =
-      let+ ps, t' = aux pathTl t in
+      let+ ps, t' = new_paths pathtl t in
       cons (hd path) <$> ps, t' in
     E.ast_cost t', fold_left Paths.insert (Paths.delete_min h) ps, t'
 

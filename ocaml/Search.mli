@@ -4,7 +4,7 @@ module type PATHORDER = sig
 end
 
 module type ENV = sig
-  val successorsMap : Grammar.t list Grammar.Map.t
+  val succMap : Grammar.t list Grammar.Map.t
   val ast_cost : Grammar.t Tree.t -> float
 end
 

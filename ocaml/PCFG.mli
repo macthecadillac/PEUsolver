@@ -17,7 +17,7 @@ val count : Grammar.t Grammar.Map.t -> Grammar.t list -> raw_t
 
 (** [train ntMap asts] trains the PHOG based on a given collection of solution
     ASTs. It spits out the raw format. *)
-val train : Grammar.t Grammar.Map.t  -> TCOND.p -> Grammar.t Tree.t list -> raw_t
+val train : Grammar.t Grammar.Map.t  -> TCOND.p -> AST.t list -> raw_t
 
 (** [compile ntMap raw] builds the PCFG type. [ntMap] is a map that connects
     production rules to their corresponding non-terminal types. *)
@@ -28,7 +28,11 @@ val rule_cost : t -> Grammar.t -> float
 
 (** [ast_cost t [] ast] computes the cost of an entire AST. The TCOND.p entry is
     simple for API compatibility with PHOG *)
-val ast_cost : t -> TCOND.p -> Grammar.t Tree.t -> float
+val ast_cost : t -> TCOND.p -> AST.t -> float
+
+(** [compute_heuristic succMap pcfg] computes all the heuristic values
+    associated with each production rule *)
+val compute_heuristic : Grammar.t list Grammar.Map.t -> t -> float Grammar.Map.t
 
 (** Pretty printer *)
 val pp : t printer

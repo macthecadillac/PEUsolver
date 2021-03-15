@@ -121,3 +121,5 @@ let ast_cost phog p t =
   let pairs = enumerate_hog p [t] in
   List.map (uncurry (rule_cost phog)) pairs
   |> List.fold_left (+.) 0.
+
+
