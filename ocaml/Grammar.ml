@@ -18,9 +18,8 @@ let to_string a = a
 
 let init = "Start"
 
-let parse_spec s =
+let parse_spec fpath =
   let open Result.Infix in
-  let* fpath = Fpath.of_string s in
   let* str = File.read fpath in
   Sexp.parse_string_list str |> Result.map_err (fun s -> `Msg s)
 

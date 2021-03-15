@@ -1,8 +1,16 @@
 open Containers
 open Fun
 open Cmdliner
+open Bos
 
-let baseDir = "/home/mac/Documents/code/cse291/"
+module List = struct
+  include List
+  let pp pp_item =
+    let f s fmt () = Format.fprintf fmt "%s" s in
+    pp ~pp_sep:(f "; ") ~pp_start:(f "[") ~pp_stop:(f "]") pp_item
+end
+
+let baseDir = Result.(Fpath.parent <$> OS.Dir.current ())
 
 type cmd = EnumPCFG | TrainPHOG | TrainPCFG | EnumPHOG | RunPCFG | RunPHOG | PrintHelp
 type mode = PCFG | PHOG
@@ -19,7 +27,7 @@ module type E = sig
   val tcondP : TCOND.p
 end
 
-module type R = sig val run : int -> order -> unit end
+module type R = sig val run : int -> order -> string -> unit end
 
 module Enumerate (P : Sig.P) (Env : E) : R = struct
   let make_struct succMap ast_cost = (module struct
@@ -27,29 +35,33 @@ module Enumerate (P : Sig.P) (Env : E) : R = struct
     let ast_cost = ast_cost
   end : Search.ENV)
 
-  let run n order =
+  let run n order specFileName =
     let open Result in
     let result =
-      let specDir = baseDir ^ "benchmark/string/train/dr-name.sl" in
-      let* fullSpec = Grammar.parse_spec specDir in
-      let* succMap = Grammar.succession_map fullSpec in
-      let* ntMap = Grammar.rule_nttype_map fullSpec in
-      let* json = JSON.parse @@ Printf.sprintf "%sbenchmark/%s.json" baseDir Env.name in
-      let+ p_raw = P.decode json in
-      let p = P.compile ntMap p_raw in
-      let ast_cost = P.ast_cost p Env.tcondP in
-      let env = make_struct succMap ast_cost in
-      let orderM =
-        match order with
-          AS -> (module SearchOrder.AStar : Search.PATHORDER)
-        | FAS -> (module SearchOrder.FAStar (val env) : Search.PATHORDER) in
-      let (module S) = (module Search.Make (val env) (val orderM) : Search.S) in
-      S.sequence
-      |> Seq.map (fun s -> ast_cost s, s)
-      |> Seq.take n
-      |> Seq.iter (fun (a, b) ->
-          Format.printf "%f\t%a\n" a AST.pp b;
-          Format.print_flush ()) in
+      if String.equal specFileName "" then Error (`Msg "file name cannot be blank")
+      else
+        let* projBase = baseDir in
+        let specPath = Fpath.(projBase / "benchmark" / "string" / "test" / specFileName) in
+        let* fullSpec = Grammar.parse_spec specPath in
+        let* succMap = Grammar.succession_map fullSpec in
+        let* ntMap = Grammar.rule_nttype_map fullSpec in
+        let jsonPath = Fpath.(projBase / "benchmark" / (Env.name ^ ".json")) in
+        let* json = JSON.parse jsonPath in
+        let+ p_raw = P.decode json in
+        let p = P.compile ntMap p_raw in
+        let ast_cost = P.ast_cost p Env.tcondP in
+        let env = make_struct succMap ast_cost in
+        let orderM =
+          match order with
+            AS -> (module SearchOrder.AStar : Search.PATHORDER)
+          | FAS -> (module SearchOrder.FAStar (val env) : Search.PATHORDER) in
+        let (module S) = (module Search.Make (val env) (val orderM) : Search.S) in
+        S.sequence
+        |> Seq.map (fun s -> ast_cost s, s)
+        |> Seq.take n
+        |> Seq.iter (fun (a, b) ->
+            Format.printf "%f\t%a\n" a AST.pp b;
+            Format.print_flush ()) in
     print_result result
 end
 
@@ -70,39 +82,50 @@ module Synthesize (P : Sig.P) (Env : E) : R = struct
 
   let verify ast (args, res) = V.equal (eval ast args) res
 
-  let run n order =
+  let constraint_pp fmt (args, res) =
+    Format.fprintf fmt "%a -> %a" (List.pp V.pp) args V.pp res
+
+  let run n order specFileName =
     let open Result in
     let result =
-      let specDir = baseDir ^ "benchmark/string/train/dr-name.sl" in
-      let* fullSpec = Grammar.parse_spec specDir in
-      let* constraints = Grammar.parse_constraints fullSpec in
-      let cs =
-        let open List.Infix in
-        let+ args, res = constraints in
-        List.map (fun arg -> V.Str arg) args, V.Str res in
-      let* succMap = Grammar.succession_map fullSpec in
-      let* ntMap = Grammar.rule_nttype_map fullSpec in
-      let* json = JSON.parse @@ Printf.sprintf "%sbenchmark/%s.json" baseDir Env.name in
-      let+ p_raw = P.decode json in
-      let p = P.compile ntMap p_raw in
-      let ast_cost = P.ast_cost p Env.tcondP in
-      let env = make_struct succMap ast_cost in
-      let orderM =
-        match order with
-          AS -> (module SearchOrder.AStar : Search.PATHORDER)
-        | FAS -> (module SearchOrder.FAStar (val env) : Search.PATHORDER) in
-      let (module S) = (module Search.Make (val env) (val orderM) : Search.S) in
-      S.sequence
-      |> Seq.take_while (fun ast ->
-          let pred = List.for_all (verify ast) cs in
-          if pred then begin
-            Format.printf "Solution found: %a\n" AST.pp ast;
-            false
-          end
-          else true)
-      |> Seq.iteri (fun i ast ->
-          Format.printf "%i: %a\n" (i + 1) AST.pp ast;
-          Format.print_flush ()) in
+      if String.equal specFileName "" then Error (`Msg "file name cannot be blank")
+      else
+        let* projBase = baseDir in
+        let specPath = Fpath.(projBase / "benchmark" / "string" / "test" / specFileName) in
+        let* fullSpec = Grammar.parse_spec specPath in
+        let* constraints = Grammar.parse_constraints fullSpec in
+        let cs =
+          let open List.Infix in
+          let+ args, res = constraints in
+          List.map (fun arg -> V.Str arg) args, V.Str res in
+        let* succMap = Grammar.succession_map fullSpec in
+        let* ntMap = Grammar.rule_nttype_map fullSpec in
+        let jsonPath = Fpath.(projBase / "benchmark" / (Env.name ^ ".json")) in
+        let* json = JSON.parse jsonPath in
+        let+ p_raw = P.decode json in
+        let p = P.compile ntMap p_raw in
+        let ast_cost = P.ast_cost p Env.tcondP in
+        let env = make_struct succMap ast_cost in
+        let orderM =
+          match order with
+            AS -> (module SearchOrder.AStar : Search.PATHORDER)
+          | FAS -> (module SearchOrder.FAStar (val env) : Search.PATHORDER) in
+        let (module S) = (module Search.Make (val env) (val orderM) : Search.S) in
+        S.sequence
+        |> Seq.take_while (fun ast ->
+            let pred = List.for_all (verify ast) cs in
+            if pred then begin
+              Format.printf "Solution found: %a\n" AST.pp ast;
+              Format.printf "  Constraints: %a\n" (List.pp constraint_pp) cs;
+              Format.printf "     AST eval: %a\n"
+                (List.pp constraint_pp)
+                (List.map (fun (args, res) -> args, eval ast args) cs);
+              false
+            end
+            else true)
+        |> Seq.iteri (fun i ast ->
+            Format.printf "%i: %a\n" (i + 1) AST.pp ast;
+            Format.print_flush ()) in
     print_result result
 end
 
@@ -112,8 +135,9 @@ module Train (P : Sig.P) (Env: E) : T = struct
   let run () =
     let open Result in
     let result =
-      let* path = Fpath.of_string @@ baseDir ^ "benchmark/string/train" in
-      let* rawSpecs = List.map Fpath.to_string <$> Bos.OS.Dir.contents path in
+      let* projBase = baseDir in
+      let path = Fpath.(projBase / "benchmark" / "string" / "train") in
+      let* rawSpecs = Bos.OS.Dir.contents path in
       let* specs = List.map Grammar.parse_spec rawSpecs |> flatten_l in
       let* ntMaps = List.map Grammar.rule_nttype_map specs |> flatten_l in
       let* ntMap =
@@ -123,38 +147,43 @@ module Train (P : Sig.P) (Env: E) : T = struct
       let* asts = List.map (Grammar.build_solution_ast ntMap) specs |> flatten_l in
       let raw = P.train ntMap Env.tcondP asts in
       let json = P.encode raw in
-      JSON.save json @@ Printf.sprintf "%sbenchmark/%s.json" baseDir Env.name in
+      let jsonPath = Fpath.(projBase / "benchmark" / (Env.name ^ "json")) in
+      JSON.save json jsonPath in
     print_result result
 end
 
-let exe n order = function
+let make_env ?tcondP name = (module struct
+  let name = name
+  let tcondP = Option.get_or ~default:[] tcondP
+end : E)
+
+let tcondP = TCOND.[M Right; W WriteValue; M Up; W WriteValue]
+
+let exe n order spec = function
     EnumPCFG ->
-      let env = (module struct let tcondP = [] let name = "pcfg" end : E) in
+      let env = make_env "pcfg" in
       let (module E) = (module Enumerate (PCFG) (val env) : R) in
-      E.run n order
+      E.run n order spec
   | EnumPHOG ->
-      let p = TCOND.[M Right; W WriteValue; M Up; W WriteValue] in
-      let env = (module struct let tcondP = p let name = "phog" end : E) in
+      let env = make_env "phog" ~tcondP in
       let (module E) = (module Enumerate (PHOG) (val env) : R) in
-      E.run n order
+      E.run n order spec
   | TrainPCFG ->
-      let env = (module struct let tcondP = [] let name = "pcfg" end : E) in
+      let env = make_env "pcfg" in
       let (module T) = (module Train (PCFG) (val env) : T) in
       T.run ()
   | TrainPHOG ->
-      let p = TCOND.[M Right; W WriteValue; M Up; W WriteValue] in
-      let env = (module struct let tcondP = p let name = "phog" end : E) in
+      let env = make_env "phog" ~tcondP in
       let (module T) = (module Train (PHOG) (val env) : T) in
       T.run ()
   | RunPCFG ->
-      let env = (module struct let tcondP = [] let name = "pcfg" end : E) in
+      let env = make_env "pcfg" in
       let (module S) = (module Synthesize (PCFG) (val env) : R) in
-      S.run n order
+      S.run n order spec
   | RunPHOG ->
-      let p = TCOND.[M Right; W WriteValue; M Up; W WriteValue] in
-      let env = (module struct let tcondP = p let name = "phog" end : E) in
+      let env = make_env "phog" ~tcondP in
       let (module S) = (module Synthesize (PHOG) (val env) : R) in
-      S.run n order
+      S.run n order spec
   | PrintHelp ->
       let msg = "A required argument is missing. "
         ^ "See the help page for more information." in
@@ -183,6 +212,10 @@ let order =
   let var = ["astar", AS; "fastar", FAS] in
   Arg.(value @@ opt (enum var) AS @@ info ["o"; "order"] ~doc)
 
+let spec =
+  let doc = "The name of the spec file." in
+  Arg.(value @@ opt string "" @@ info ["f"; "spec"] ~doc)
+
 let runMode =
   let cmds = ["train-phog", TrainPHOG; "train-pcfg", TrainPCFG;
               "enum-pcfg", EnumPCFG; "enum-phog", EnumPHOG;
@@ -190,5 +223,5 @@ let runMode =
   Arg.(value @@ pos 0 (enum cmds) PrintHelp @@ info [])
 
 let () =
-  let main = Term.(const exe $ nEnum $ order $ runMode) in
+  let main = Term.(const exe $ nEnum $ order $ spec $ runMode) in
   Term.exit @@ Term.eval (main, info)

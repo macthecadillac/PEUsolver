@@ -5,9 +5,8 @@ type t = Yojson.Basic.t
 
 let of_json a = a
 
-let parse s =
+let parse fpath =
   let open Result in
-  let* fpath = Fpath.of_string s in
   let+ str = File.read fpath in
   Yojson.Basic.from_string str
 
@@ -25,8 +24,7 @@ let of_assoc l = `Assoc l
 
 let of_string s = `String s
 
-let save t path =
+let save t fpath =
   let open Result.Infix in
   let str = Yojson.Basic.pretty_to_string t in
-  let* fpath = Fpath.of_string path in
   File.write fpath str

@@ -24,7 +24,7 @@ end
 val init : t
 
 (** [parse_spec path] parses the specification at the given path *)
-val parse_spec : string -> (Sexp.t list, [`Msg of string]) result
+val parse_spec : Fpath.t -> (Sexp.t list, [`Msg of string]) result
 
 (** [succession_map specs] builds a map that terms to their successor terms *)
 val succession_map : Sexp.t list -> (t list Map.t, [`Msg of string]) result

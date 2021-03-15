@@ -3,10 +3,10 @@ type t
 val of_json : Yojson.Basic.t -> t
 
 (** [parse path] parses the JSON files at [path] *)
-val parse : string -> (t, [`Msg of string]) result
+val parse : Fpath.t -> (t, [`Msg of string]) result
 
 (** [save json path] saves the JSON data to [path] *)
-val save : t -> string -> (unit, [`Msg of string]) result
+val save : t -> Fpath.t -> (unit, [`Msg of string]) result
 
 (** [read_int t] attempts to read [t] as a JSON int *)
 val read_int : t -> (int, [`Msg of string]) result
