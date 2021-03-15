@@ -17,36 +17,21 @@ let pp fmt ast =
       s, [] -> Format.sprintf "%a" Grammar.pp s
     | s, l -> Format.sprintf "%a(%a)" Grammar.pp s list_pp l in
   Format.fprintf fmt "%s" @@ Tree.fold (curry to_string) ast
+
 exception EvalError of string
-
-module Value = struct
-  type t = Str of string | Int of int | Bool of bool
-
-  let pp fmt = function
-      Str s -> Format.fprintf fmt "%s" s
-    | Int i -> Format.fprintf fmt "%i" i
-    | Bool b -> Format.fprintf fmt "%b" b
-
-  let equal a b =
-    match a, b with
-      Str a, Str b -> String.equal a b
-    | Int a, Int b -> Int.equal a b
-    | Bool a, Bool b -> Bool.equal a b
-    | _ -> false
-end
 
 let equal = Tree.equal Grammar.equal
 
 let eval ?arg0 ?arg1 ?arg2 ?arg3 ast =
   let open Value in
-  let try_unwrap_str = function
+  let try_unwrap_str n = function
       Some (Str s) -> Str s
-    | Some _ -> raise (EvalError "arg0 type error")
-    | None -> raise (EvalError "arg0 not provided") in
-  let try_unwrap_int = function
+    | Some _ -> raise @@ EvalError (Printf.sprintf "str._arg_%i type error" n)
+    | None -> raise @@ EvalError (Printf.sprintf "str._arg_%i not provided" n) in
+  let try_unwrap_int n = function
       Some (Int i) -> Int i
-    | Some _ -> raise (EvalError "arg0 type error")
-    | None -> raise (EvalError "arg0 not provided") in
+    | Some _ -> raise @@ EvalError (Printf.sprintf "int._arg_%i type error" n)
+    | None -> raise @@ EvalError (Printf.sprintf "int._arg_%i not provided" n) in
   let aux = function
       "str.++", [Str a; Str b] -> Str (a ^ b)
     | "str.at", [Str a; Int b] ->
@@ -81,14 +66,14 @@ let eval ?arg0 ?arg1 ?arg2 ?arg3 ast =
     | "+", [Int a; Int b] -> Int (a + b)
     | "-", [Int a; Int b] -> Int (a - b)
     | "=", [a; b] -> Bool (equal a b)
-    | "str._arg_0", _ -> try_unwrap_str arg0
-    | "str._arg_1", _ -> try_unwrap_str arg1
-    | "str._arg_2", _ -> try_unwrap_str arg2
-    | "str._arg_3", _ -> try_unwrap_str arg3
-    | "int._arg_0", _ -> try_unwrap_int arg0
-    | "int._arg_1", _ -> try_unwrap_int arg1
-    | "int._arg_2", _ -> try_unwrap_int arg2
-    | "int._arg_3", _ -> try_unwrap_int arg3
+    | "str._arg_0", _ -> try_unwrap_str 0 arg0
+    | "str._arg_1", _ -> try_unwrap_str 1 arg1
+    | "str._arg_2", _ -> try_unwrap_str 2 arg2
+    | "str._arg_3", _ -> try_unwrap_str 3 arg3
+    | "int._arg_0", _ -> try_unwrap_int 0 arg0
+    | "int._arg_1", _ -> try_unwrap_int 1 arg1
+    | "int._arg_2", _ -> try_unwrap_int 2 arg2
+    | "int._arg_3", _ -> try_unwrap_int 3 arg3
     | "true", _ -> Bool true
     | "false", _ -> Bool false
     | s, [] ->  (* for literals *)

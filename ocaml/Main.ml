@@ -71,7 +71,7 @@ module Synthesize (P : Sig.P) (Env : E) : R = struct
     let ast_cost = ast_cost
   end : Search.ENV)
 
-  module V = AST.Value
+  module V = Value
 
   let eval ast = function
       [arg0] -> AST.eval ~arg0 ast
@@ -94,10 +94,6 @@ module Synthesize (P : Sig.P) (Env : E) : R = struct
         let specPath = Fpath.(projBase / "benchmark" / "string" / "test" / specFileName) in
         let* fullSpec = Grammar.parse_spec specPath in
         let* constraints = Grammar.parse_constraints fullSpec in
-        let cs =
-          let open List.Infix in
-          let+ args, res = constraints in
-          List.map (fun arg -> V.Str arg) args, V.Str res in
         let* succMap = Grammar.succession_map fullSpec in
         let* ntMap = Grammar.rule_nttype_map fullSpec in
         let jsonPath = Fpath.(projBase / "benchmark" / (Env.name ^ ".json")) in
@@ -113,16 +109,21 @@ module Synthesize (P : Sig.P) (Env : E) : R = struct
         let (module S) = (module Search.Make (val env) (val orderM) : Search.S) in
         S.sequence
         |> Seq.take_while (fun ast ->
-            let pred = List.for_all (verify ast) cs in
+            let err, pred =
+              try false, List.for_all (verify ast) constraints with
+                AST.EvalError s ->
+                  Format.printf "\t%a\n\t%s\n" AST.pp ast s;
+                  true, false
+            in
             if pred then begin
               Format.printf "Solution found: %a\n" AST.pp ast;
-              Format.printf "  Constraints: %a\n" (List.pp constraint_pp) cs;
+              Format.printf "  Constraints: %a\n" (List.pp constraint_pp) constraints;
               Format.printf "     AST eval: %a\n"
                 (List.pp constraint_pp)
-                (List.map (fun (args, res) -> args, eval ast args) cs);
-              false
+                (List.map (fun (args, res) -> args, eval ast args) constraints);
+              not err && false
             end
-            else true)
+            else not err && true)
         |> Seq.iteri (fun i ast ->
             Format.printf "%i: %a\n" (i + 1) AST.pp ast;
             Format.print_flush ()) in

@@ -2,14 +2,7 @@ type t = Grammar.t Tree.t
 
 type 'a printer = Format.formatter -> 'a -> unit
 
-module Value : sig
-  type t = Str of string | Int of int | Bool of bool
-
-  val equal : t -> t -> bool
-
-  (** Pretty printer for values *)
-  val pp : t printer
-end
+exception EvalError of string
 
 (** [equal ast1 ast2] tests for structural equality between ast1 and ast2 *)
 val equal : t -> t -> bool

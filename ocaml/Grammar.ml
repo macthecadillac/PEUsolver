@@ -180,6 +180,7 @@ let build_solution_ast ntMap (spec : Sexp.t list) =
 
 let parse_constraints (spec : Sexp.t list) =
   let open Result.Infix in
+  let filter_synth = function `List (`Atom "synth-fun"::_) -> true | _ -> false in
   let filter_constraints = function `List (`Atom "constraint"::_) -> true | _ -> false in
   let* constraints = List.filter filter_constraints spec
     |> List.map sexp_list |> Result.flatten_l in
@@ -187,13 +188,35 @@ let parse_constraints (spec : Sexp.t list) =
     let* args = sexp_list fargs in
     match args with
       `Atom "f"::s -> List.map sexp_atom s |> Result.flatten_l
-    | _ -> Error (`Msg "Malformed constraint") in
+    | _ -> Error (`Msg "Grammar.parse_constraints: malformed constraint") in
   let parse = function
       [`Atom "constraint"; `List [`Atom "="; fargs; `Atom res]] ->
         let+ args = parse_args fargs in
         args, res
-    | _ -> Error (`Msg "Malformed constraint") in
-  List.map parse constraints |> Result.flatten_l
+    | _ -> Error (`Msg "Grammar.parse_constraints: malformed constraint") in
+  let parse_type = function
+      "String" -> Ok `String
+    | "Int" -> Ok `Int
+    | "Bool" -> Ok `Bool
+    | s -> Error (`Msg ("Grammar.parse_constraints: unrecognized type: " ^ s)) in
+  let parse_arg_type = function
+      `List [`Atom _; `Atom s] -> parse_type s
+    | _ -> Error (`Msg "Grammar.parse_constraints: malformed arg list") in
+  let* spec = List.filter filter_synth spec |> List.hd |> sexp_list in
+  let* argList = List.nth spec 2 |> sexp_list in
+  let* out = List.nth spec 3 |> sexp_atom in
+  let* outputType = parse_type out in
+  let* argTypes = List.map parse_arg_type argList |> Result.flatten_l in
+  let* constraints = List.map parse constraints |> Result.flatten_l in
+  Result.flatten_l
+  @@ List.map
+     (fun (args, res) ->
+       let* resVal = Value.of_string outputType res in
+       let+ argVals = Result.flatten_l
+         @@ List.map (fun (arg, t) -> Value.of_string t arg)
+         @@ List.combine args argTypes in
+       argVals, resVal)
+     constraints
 
 let is_hole prodMap term =
   not @@ List.is_empty @@ Option.get_exn @@ Map.get term prodMap
