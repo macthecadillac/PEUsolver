@@ -3,6 +3,8 @@ import json
 import math
 import pprint
 
+from .stat import PCFG
+
 class Heuristic:
     def get_rule_cost(self, rule):
         pass
@@ -24,46 +26,41 @@ class PCFGHeuristic(Heuristic):
             pcfg = json.load(f)['word-count']
         return cls(pcfg, grammar)
 
-    def __init__(self, p_table, grammar):
+    def __init__(self, pcfg, grammar):
         print('Initializing PCFG')
 
-        # Trim p_table to be grammar specific
-        new_p_table = {}
-        for nt_symbol in grammar.rules.keys():
-            counter = {}
-            total_count = 0
-            for rule in grammar.rules[nt_symbol]:
-                symbol = rule.term_node.symbol
-                counter[symbol] = p_table[nt_symbol].get(symbol, 1)
-                total_count += counter[symbol]
-            for rule in grammar.rules[nt_symbol]:
-                counter[rule.term_node.symbol] /= total_count
-            new_p_table[nt_symbol] = counter
-        self.p_table = new_p_table
+        pcfg.smooth(grammar)
+        self.p_table = pcfg.p_table
         print()
         print('probability table:')
         pprint.pp(self.p_table)
         print()
 
         # Initial computation of nonterminal heuristics
+        epsilon = 0.01
         h_table = {}
         for nt_symbol in grammar.rules.keys():
             h_table[nt_symbol] = 0
-        while True:
-            h_table_new = copy.deepcopy(h_table)
-            for nt_symbol in h_table.keys():
-                for rule in grammar.rules[nt_symbol]:
+        updated = True
+        while updated:
+            updated = False
+            for nt_symbol, rules in grammar.rules.items():
+                h_old = h_table[nt_symbol]
+                p_max = h_old
+                for rule in rules:
                     p = self.p_table[nt_symbol][rule.term_node.symbol]
                     for child_node in rule.term_node.children:
                         p *= h_table[child_node.symbol]
-                    h_table_new[nt_symbol] = max(h_table_new[nt_symbol], p)
-            if h_table_new == h_table:
-                break
-            h_table = h_table_new
-        self.h_table = h_table
+                    p_max = max(p_max, p)
+                h_table[nt_symbol] = p_max
+                updated = updated or (math.fabs(h_table[nt_symbol] - h_old) > epsilon)
+        g_table = {}
+        for nt_symbol, h in h_table.items():
+            g_table[nt_symbol] = -math.log2(h)
+        self.g_table = g_table
         print()
         print('heuristic table:')
-        pprint.pp(self.h_table)
+        pprint.pp(self.g_table)
         print()
 
     def get_rule_cost(self, rule):
@@ -71,4 +68,4 @@ class PCFGHeuristic(Heuristic):
         return -math.log2(p)
 
     def estimate_nt_cost(self, nt_node):
-        return self.h_table[nt_node.symbol]
+        return self.g_table[nt_node.symbol]
