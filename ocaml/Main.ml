@@ -93,14 +93,15 @@ module Synthesize (P : Sig.P) (Env : E) : R = struct
         | FAS -> (module SearchOrder.FAStar (val env) : Search.PATHORDER) in
       let (module S) = (module Search.Make (val env) (val orderM) : Search.S) in
       S.sequence
-      |> Seq.take_while (fun s -> not @@ List.for_all (verify s) cs)
+      |> Seq.take_while (fun ast ->
+          let pred = List.for_all (verify ast) cs in
+          if pred then begin
+            Format.printf "Solution found: %a\n" AST.pp ast;
+            false
+          end
+          else true)
       |> Seq.iteri (fun i ast ->
           Format.printf "%i: %a\n" (i + 1) AST.pp ast;
-          List.iter (fun (args, res) ->
-            let res' = eval ast args in
-            let list_pp fmt = List.iter (fun s -> Format.fprintf fmt "%a " V.pp s) in
-            Format.printf "Args: %a\t\nEval: %a\t\nExpected: %a\n\n" list_pp args V.pp res' V.pp res)
-          cs;
           Format.print_flush ()) in
     print_result result
 end

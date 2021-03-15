@@ -59,6 +59,7 @@ let eval ?arg0 ?arg1 ?arg2 ?arg3 ast =
         else Str ""
     | "str.indexof", [Str a; Str b; Int i] -> 
         if i < 0 then Int (-1)
+        else if String.length b = 0 then Int i
         else
           let n = String.drop i a
             |> String.split ~by:b
