@@ -11,7 +11,10 @@ type count = { wordCount : int; vocab : int }
 let count_pp fmt c =
   Format.fprintf fmt "{ wordCount : %i; vocab : %i }" c.wordCount c.vocab
 
+type raw_t = (Grammar.t * (Grammar.t * int) list) list
+
 type t = { counts : count M.t;
+           raw : raw_t;
            (* map the rules to the non-terminal type they belong *)
            ntMap : Grammar.t M.t;
            probMap : float M.t }
@@ -24,8 +27,6 @@ let pp fmt t =
   (M.pp Grammar.pp count_pp) t.counts
   (M.pp Grammar.pp Float.pp) t.probMap
   (M.pp Grammar.pp Grammar.pp) t.ntMap
-
-type raw_t = (Grammar.t * (Grammar.t * int) list) list
 
 let count ntMap rules =
   let open List.Infix in
@@ -80,7 +81,7 @@ let compile ntMap assocs =
     let open List.Infix in
     let+ nonterm, innerAssoc = a in
     let cnt = f innerAssoc in
-    nonterm, cnt in
+    nonterm, cnt + 1 in  (* FIXME: temp fix *)
   let ntWordCount = count_inner List.(fold_left (+) 0 % map snd) assocs in
   let ntVocab = count_inner List.length assocs in
   let probMap =
@@ -95,20 +96,21 @@ let compile ntMap assocs =
   let counts = List.combine ntWordCount ntVocab
     |> List.map (function (s, wordCount), (_, vocab) -> s, { wordCount; vocab })
     |> M.of_list in
-  { counts; probMap; ntMap }
+  { raw = assocs; counts; probMap; ntMap }
 
-let rule_cost pcfg rule =
+let rule_prob pcfg rule =
   let open Option.Infix in
   let costOpt =
     let+ ntType = M.get rule pcfg.ntMap in
-    (* the non-terminal type must exist in the map *)
-    let count = Option.get_exn @@ M.get ntType pcfg.counts in
+    let default = { wordCount = 5000; vocab = 5000 } in
+    let count = Option.get_or ~default @@ M.get ntType pcfg.counts in
     let default = Float.(1. /. (of_int count.vocab +. of_int count.wordCount)) in
     (* let default = 0.001 in *)
-    let prob = Option.get_or ~default (M.get rule pcfg.probMap) in
-    -. log2 prob in
+    Option.get_or ~default (M.get rule pcfg.probMap) in
   (* if a "rule" isn't found in ntMap, it is a hole which should have a cost of 0 *)
-  Option.get_or ~default:0. costOpt
+  Option.get_or ~default:0.0001 costOpt
+
+let rule_cost pcfg rule = -. log2 (rule_prob pcfg rule)
 
 let ast_cost pcfg _ t =
   let aux = function
@@ -116,19 +118,6 @@ let ast_cost pcfg _ t =
     | s, l -> List.fold_left (+.) (rule_cost pcfg s) l in
   Tree.fold (curry aux) t
 
-let compute_heuristic succMap pcfg =
-  let rec aux map =
-    let open List.Infix in
-    let pairs =
-      let* rule, p = Grammar.Map.to_list map in
-      let+ nextRule = Grammar.Map.get_or ~default:[] rule succMap in
-      let p' = rule_cost pcfg nextRule in
-      rule, p *. p' in
-    let map' = Grammar.Map.of_list pairs in
-    if Grammar.Map.equal (fun a b -> abs_float (a -. b) <. 0.0001) map map'
-    then map'
-    else aux map' in
-  Grammar.Map.to_list succMap
-  |> List.map (fun (rule, _) -> rule, 0.)
-  |> Grammar.Map.of_list
-  |> aux
+let compute_heuristic _ _ = Grammar.Map.empty
+
+let compute_heuristic_with_context _ _ _ = TCOND.ContextRuleMap.empty

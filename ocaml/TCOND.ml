@@ -83,7 +83,7 @@ let p_to_string =
   let pp = List.pp ~pp_sep:(f " ") ~pp_start:(f "") ~pp_stop:(f "") pp in
   Format.sprintf "%a" pp
 
-let p_of_string = String.split_on_char ' ' %> List.map tcond_of_string
+let p_of_string = String.trim %> String.split_on_char ' ' %> List.map tcond_of_string
 
 let save tcondP fpath = Bos.OS.File.write fpath (p_to_string tcondP)
 
@@ -103,24 +103,24 @@ let firstOp = [M Up; M Left; M Right; M PrevDFS]
 let allOps = moveOps @ writeOps
 
 let compact p =
-  let rec aux acc p =
+  let rec aux dummyCtxt acc p =
     match acc, p with
-      [], l -> l
-    | _, [] -> []
-    | l, W _::ps -> aux l ps
+      [], l -> dummyCtxt, l
+    | _, [] -> dummyCtxt, []
+    | l, W _::ps -> aux (Grammar.of_string "\\0"::dummyCtxt) l ps
     | M Left::xs, ((M Up::_) as ps)
     | M Right::xs, ((M Up::_) as ps)
     | M Left::xs, M Right::ps
     | M Right::xs, M Left::ps
     | M DownFirst::xs, M Up::ps
-    | M DownLast::xs, M Up::ps -> aux xs ps
-    | xs, M PrevDFS::ps -> aux xs (M Up::ps)
-    | l, p::ps -> aux (p::l) ps
+    | M DownLast::xs, M Up::ps -> aux dummyCtxt xs ps
+    | xs, M PrevDFS::ps -> aux dummyCtxt xs (M Up::ps)
+    | l, p::ps -> aux dummyCtxt (p::l) ps
   in match p with
-    [] -> []
-  | op::rest -> aux [op] rest
+    [] -> [], []
+  | op::rest -> aux [] [op] rest
 
-let apply loc ast p =
+let apply loc ast p : Grammar.t * Context.t =
   let rec aux acc i (Tree.Node (_, l) as node) child p dir =
     match move acc i child p `None with
       `Done _ as c -> c
@@ -128,13 +128,17 @@ let apply loc ast p =
         move acc' i node p' `None
     | `Continue (`Left, acc', p') ->
         if i <= 0
-        then aux acc' i node (List.nth l i) (compact (M Left::p')) `None
+        then
+          let skipped, p'' = compact (M Left::p') in
+          aux (List.rev_append skipped acc') i node (List.nth l i) p'' `None
         else begin
           aux acc' (i - 1) node (List.nth l (i - 1)) p' `None
         end
     | `Continue (`Right, acc', p') ->
         if i >= List.length l - 1
-        then aux acc' i node (List.nth l i) (compact (M Right::p')) `None
+        then
+          let skipped, p'' = compact (M Right::p') in
+          aux (List.rev_append skipped acc') i node (List.nth l i) p'' `None
         else aux acc' (i + 1) node (List.nth l (i + 1)) p' `None
     | `Continue (`PrevDFS, acc', p') ->
         if i <= 0
@@ -150,13 +154,17 @@ let apply loc ast p =
     | W WriteValue::tl, `None -> move (a::acc) i node tl `None
     | M DownFirst::tl, `None -> begin
         match List.head_opt l with
-          None -> move acc i node (compact tl) `None
-        | Some h -> aux acc 0 node h tl `None
+          Some h -> aux acc 0 node h tl `None
+        | None ->
+            let skipped, p = compact tl in
+            move (List.rev_append skipped acc) i node p `None
       end
     | M DownLast::tl, `None -> begin
         match List.last_opt l with
-          None -> move acc i node (compact tl) `None
-        | Some h -> aux acc (List.length l - 1) node h tl `None
+          Some h -> aux acc (List.length l - 1) node h tl `None
+        | None ->
+            let skipped, p = compact tl in
+            move (List.rev_append skipped acc) i node p `None
       end
     | _, `Child -> begin
         match List.last_opt l with
@@ -165,14 +173,16 @@ let apply loc ast p =
       end
   in
   let rec main l i ast p dir =
-    let finalize acc = 
+    let finalize acc =
       let rev'd = List.rev acc in
       let h = List.hd rev'd in
       h, List.rev @@ List.tl rev'd in
     match move l i ast p dir with
       `Continue (`Up, acc, tl) | `Continue (`PrevDFS, acc, tl) -> begin
-        match compact tl with
-          M DownLast::tl' | M DownFirst::tl' -> main acc 0 ast tl' `None
+        let skipped, p' = compact tl in
+        match p' with
+          M DownLast::tl' | M DownFirst::tl' -> 
+            main (List.rev_append skipped acc) 0 ast tl' `None
         | _ -> finalize acc
       end
     | `Done (_::_ as acc) | `Continue (_, acc, _) -> finalize acc
@@ -220,8 +230,6 @@ let mutate p =
       | hd::tl -> aux (hd::acc1) acc2 tl in
     aux [] [] in
   let chunks = partition p in
-  (* Format.printf "%a\n" (List.pp pp') chunks; *)
-  (* Format.print_flush (); *)
   let ops =
     if List.length p <= 2 then [`I add; `A append]
     else if List.length chunks <= 1 then [`I modify; `I add; `A append]

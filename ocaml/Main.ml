@@ -33,6 +33,7 @@ module Enumerate (P : Sig.P) (Env : E) : R = struct
   let make_struct succMap ast_cost = (module struct
     let succMap = succMap
     let ast_cost = ast_cost
+    let heuristics _ _ = 0.001
   end : Search.ENV)
 
   let run n order specFileName =
@@ -66,9 +67,10 @@ module Enumerate (P : Sig.P) (Env : E) : R = struct
 end
 
 module Synthesize (P : Sig.P) (Env : E) : R = struct
-  let make_struct succMap ast_cost = (module struct
+  let make_struct succMap ast_cost heuristics = (module struct
     let succMap = succMap
     let ast_cost = ast_cost
+    let heuristics = heuristics
   end : Search.ENV)
 
   module V = Value
@@ -101,7 +103,12 @@ module Synthesize (P : Sig.P) (Env : E) : R = struct
         let+ p_raw = P.decode json in
         let p = P.compile ntMap p_raw in
         let ast_cost = P.ast_cost p Env.tcondP in
-        let env = make_struct succMap ast_cost in
+        let heuristicsMap = P.compute_heuristic succMap p in
+        let heuristicsWCtxt = P.compute_heuristic_with_context succMap p heuristicsMap in
+        let heuristics ast loc =
+          let pair = TCOND.apply loc ast Env.tcondP in
+          TCOND.ContextRuleMap.get_or ~default:0.001 (Pair.swap pair) heuristicsWCtxt in
+        let env = make_struct succMap ast_cost heuristics in
         let orderM =
           match order with
             AS -> (module SearchOrder.AStar : Search.PATHORDER)
@@ -116,7 +123,7 @@ module Synthesize (P : Sig.P) (Env : E) : R = struct
                   true, false
             in
             if pred then begin
-              Format.printf "Solution found: %a\n" AST.pp ast;
+              Format.printf "\nSolution found: %a\n" AST.pp ast;
               Format.printf "  Constraints: %a\n" (List.pp constraint_pp) constraints;
               Format.printf "     AST eval: %a\n"
                 (List.pp constraint_pp)
@@ -125,7 +132,7 @@ module Synthesize (P : Sig.P) (Env : E) : R = struct
             end
             else not err && true)
         |> Seq.iteri (fun i ast ->
-            Format.printf "%i: %a\n" (i + 1) AST.pp ast;
+            Format.printf "\rIteration: %i" (i + 1);
             Format.print_flush ()) in
     print_result result
 end
@@ -134,6 +141,7 @@ module type T = sig val run : unit -> unit end
 
 module Train (P : Sig.P) (Env: E) : T = struct
   let run () =
+    print_endline "Training PHOG...";
     let open Result in
     let result =
       let* projBase = baseDir in
@@ -148,8 +156,9 @@ module Train (P : Sig.P) (Env: E) : T = struct
       let* asts = List.map (Grammar.build_solution_ast ntMap) specs |> flatten_l in
       let raw = P.train ntMap Env.tcondP asts in
       let json = P.encode raw in
-      let jsonPath = Fpath.(projBase / "benchmark" / (Env.name ^ "json")) in
-      JSON.save json jsonPath in
+      let jsonPath = Fpath.(projBase / "benchmark" / (Env.name ^ ".json")) in
+      let+ () = JSON.save json jsonPath in
+      print_endline "Done." in
     print_result result
 end
 
@@ -166,7 +175,7 @@ let train_tcond maxIter =
       (fun acc m -> acc >>= Grammar.merge_rule_nttype_maps m)
       (Ok Grammar.Map.empty) ntMaps in
     let* asts = List.map (Grammar.build_solution_ast ntMap) specs |> flatten_l in
-    let tcondP = TCOND.train asts 0.1 maxIter in  (** hard code lambda *)
+    let tcondP = TCOND.train asts 0.15 maxIter in  (** hard code lambda *)
     let path = Fpath.(projBase / "benchmark" / "TCOND") in
     Format.printf "Done.";
     TCOND.save tcondP path in
@@ -177,7 +186,13 @@ let make_env ?tcondP name = (module struct
   let tcondP = Option.get_or ~default:[] tcondP
 end : E)
 
-let tcondP = TCOND.[M Right; W WriteValue; M Up; W WriteValue]
+let tcondP =
+  let open Result.Infix in
+  let baseP = Result.get_exn baseDir in
+  let path = Fpath.(baseP / "benchmark" / "TCOND") in
+  match TCOND.load path with
+    Ok p -> p
+  | Error _ -> raise Not_found
 
 let exe n order spec maxIter = function
     EnumPCFG ->

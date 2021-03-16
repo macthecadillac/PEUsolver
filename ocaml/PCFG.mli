@@ -23,6 +23,9 @@ val train : Grammar.t Grammar.Map.t  -> TCOND.p -> AST.t list -> raw_t
     production rules to their corresponding non-terminal types. *)
 val compile : Grammar.t Grammar.Map.t -> raw_t -> t
 
+(** [rule_prob t rule] computes the probability of a given rule. *)
+val rule_prob : t -> Grammar.t -> float
+
 (** [rule_cost t rule] computes the cost of a given rule. *)
 val rule_cost : t -> Grammar.t -> float
 
@@ -30,9 +33,12 @@ val rule_cost : t -> Grammar.t -> float
     simple for API compatibility with PHOG *)
 val ast_cost : t -> TCOND.p -> AST.t -> float
 
-(** [compute_heuristic succMap pcfg] computes all the heuristic values
-    associated with each production rule *)
+(** Dummy *)
 val compute_heuristic : Grammar.t list Grammar.Map.t -> t -> float Grammar.Map.t
+
+(** Dummy *)
+val compute_heuristic_with_context : Grammar.t list Grammar.Map.t -> t -> float Grammar.Map.t
+                                     -> float TCOND.ContextRuleMap.t
 
 (** Pretty printer *)
 val pp : t printer

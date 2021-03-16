@@ -4,13 +4,14 @@ open Fun
 type 'a printer = Format.formatter -> 'a -> unit
 
 module type PATHORDER = sig
-  type t = (int * Grammar.t) list
+  type t = float * (int * Grammar.t) list
   val compare : t -> t -> int
 end
 
 module type ENV = sig
   val succMap : Grammar.t list Grammar.Map.t
   val ast_cost : Grammar.t Tree.t -> float
+  val heuristics : AST.t -> TCOND.tcond list -> float
 end
 
 module type S = sig
@@ -26,8 +27,7 @@ module Make (E : ENV) (O : PATHORDER) : S = struct
   end = struct
     type t = float * Paths.t * Grammar.t Tree.t
     let compare (a, _, _) (b, _, _) = Float.compare a b
-    let pp fmt (f, p, t) =
-      Format.fprintf fmt "Cost: %f AST: %a" f AST.pp t
+    let pp fmt (f, p, t) = Format.fprintf fmt "Cost: %f AST: %a" f AST.pp t
   end
 
   and H : PairingHeap.S with type elt = T.t = PairingHeap.Make (T)
@@ -58,12 +58,20 @@ module Make (E : ENV) (O : PATHORDER) : S = struct
           let+ ps, ts = traverse [] (i, a) 0 t l in
           ps, Tree.Node (a, ts)
       | _ -> raise (Invalid_argument "Inconsistent path/tree") in
-    let path = Paths.find_min_exn h in
+    let _, path = Paths.find_min_exn h in
     let pathtl = tl path in  (* head is always 0/the root node *)
     let+ ps, t' =
       let+ ps, t' = new_paths pathtl t in
-      cons (hd path) <$> ps, t' in
-    E.ast_cost t', fold_left Paths.insert (Paths.delete_min h) ps, t'
+      let ps' =
+        let+ p = cons (hd path) <$> ps in
+        let loc =
+          let* i = tl @@ fst @@ split p in
+          TCOND.(M DownFirst::replicate i (M Right)) in
+        let cost = E.heuristics t' loc in
+        (cost, p) in
+      ps', t' in
+    let cost = E.ast_cost t' +. (fold_left (+.) 0. @@ map fst ps) in
+    cost, fold_left Paths.insert (Paths.delete_min h) ps, t'
 
   let rec enumerate h =
     let open Option.Infix in
@@ -76,8 +84,12 @@ module Make (E : ENV) (O : PATHORDER) : S = struct
 
   let sequence =
     let cost s = E.ast_cost (Tree.return s) in
-    List.map (fun s -> cost s, Paths.singleton [0, s], Tree.return s) init
-    |> H.of_list
+    let initL =
+      let open List.Infix in
+      let+ s = init in
+      let root = Tree.return s in
+      cost s, Paths.singleton (0., [0, s]), root in
+    H.of_list initL
     |> Seq.unfold enumerate
     |> Seq.map (function _, _, t -> t)
 end

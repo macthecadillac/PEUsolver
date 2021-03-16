@@ -20,4 +20,9 @@ module type P = sig
 
   (** [ast_cost t context ast] computes the cost of an entire AST. *)
   val ast_cost : t -> TCOND.p -> Grammar.t Tree.t -> float
+
+  val compute_heuristic : Grammar.t list Grammar.Map.t -> t -> float Grammar.Map.t
+
+  val compute_heuristic_with_context : Grammar.t list Grammar.Map.t -> t -> float Grammar.Map.t
+                                       -> float TCOND.ContextRuleMap.t
 end

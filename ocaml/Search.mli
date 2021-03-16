@@ -1,11 +1,12 @@
 module type PATHORDER = sig
-  type t = (int * Grammar.t) list
+  type t = float * (int * Grammar.t) list
   val compare : t -> t -> int
 end
 
 module type ENV = sig
   val succMap : Grammar.t list Grammar.Map.t
   val ast_cost : Grammar.t Tree.t -> float
+  val heuristics : AST.t -> TCOND.tcond list -> float
 end
 
 module type S = sig
