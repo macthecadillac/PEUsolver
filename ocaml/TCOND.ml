@@ -13,6 +13,30 @@ module List = struct
     aux 0 [] l
 end
 
+module Context = struct
+  type t = Grammar.t list
+
+  let compare = List.compare Grammar.compare
+
+  let pp =
+    let f s fmt () = Format.fprintf fmt "%s" s in
+    List.pp ~pp_sep:(f "; ") ~pp_start:(f "[") ~pp_stop:(f "]") Grammar.pp
+
+  let to_string a = String.concat "\t" (List.map Grammar.to_string a)
+
+  let of_string s = List.map Grammar.of_string @@ String.split_on_char '\t' s
+end
+
+module ContextRule = struct
+  type t = Context.t * Grammar.t
+  let compare = Pair.compare Context.compare Grammar.compare
+end
+
+module ContextMap = Map.Make (Context)
+module ContextSet = Set.Make (Context)
+module ContextRuleMap = Map.Make (ContextRule)
+module ContextRuleSet = Set.Make (ContextRule)
+
 type move =
     Up
   | Left
@@ -26,6 +50,8 @@ type write = WriteValue
 type tcond = W of write | M of move
 
 type p = tcond list
+
+let is_write = function W _ -> true | M _ -> false
 
 type 'a printer = Format.formatter -> 'a -> unit
 
@@ -176,6 +202,58 @@ let initPool =
     p', p'::l in
   Seq.unfold (Option.pure % aux) [firstOp]
 
-(* let cost trainingSet p lambda = *)
-(*   let penalty = lambda *. Float.of_int (List.length p) in *)
-(*   () *)
+(* enumerate all the nodes of the AST using the move operators *)
+let enumerate_nodes_with_move_ops =
+  let rec aux = function
+    Tree.Node (_, []) -> [[]]
+  | Tree.Node (_, ns) ->
+      let open List in
+      let locs =
+        let* i, node = mapi Pair.make ns in
+        let+ loc = aux node in
+        (M DownFirst::rev_append (replicate i (M Right)) loc) in
+      []::locs
+  in List.rev % aux
+
+let enumerate_context_rule_pairs tcondP =
+  let open List in
+  fold_left
+  (fun acc ast ->
+    let contexts =
+      let+ loc = rev @@ enumerate_nodes_with_move_ops ast in
+      let h, l = apply loc ast tcondP in
+      l, h in
+    rev_append contexts acc)
+  []
+
+let generate_probability_map tcondP asts =
+  let pairs = enumerate_context_rule_pairs tcondP asts in
+  let inc_opt = Option.(fold (fun acc a -> (+) a <$> acc) (pure 1)) in
+  let context_count =
+    let open ContextMap in
+    List.fold_left (fun acc (context, _) -> update context inc_opt acc) empty pairs in
+  let context_rule_count =
+    let open ContextRuleMap in
+    List.fold_left (fun acc pair -> update pair inc_opt acc) empty pairs in
+  let context_set = ContextSet.of_list @@ List.map fst pairs in
+  let context_rule_set = ContextRuleSet.of_list pairs in
+  let assoc =
+    let open List.Infix in
+    let* context = ContextSet.to_list context_set in
+    let+ pair = ContextRuleSet.to_list context_rule_set in
+    let denominator = Option.get_exn @@ ContextMap.get context context_count in
+    let numerator = Option.get_exn @@ ContextRuleMap.get pair context_rule_count in
+    pair, Float.(of_int numerator /. of_int denominator) in
+  ContextRuleMap.of_list assoc
+
+let cost asts tcondP lambda =
+  let probMap = generate_probability_map tcondP asts in
+  let score ast =
+    let pairs = enumerate_context_rule_pairs tcondP [ast] in
+    List.fold_left (fun acc pair ->
+      acc +. (Option.get_exn @@ ContextRuleMap.get pair probMap)) 0. pairs in
+  let tcondPTrainingSetScore =
+    List.fold_left (fun acc ast -> score ast +. acc) 0. asts in
+  let nWrites = Float.of_int @@ List.length @@ List.filter is_write tcondP in
+  let nAST = Float.of_int @@ List.length asts in
+  tcondPTrainingSetScore /. nAST +. lambda *. nWrites

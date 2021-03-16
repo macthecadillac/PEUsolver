@@ -2,24 +2,11 @@ open Containers
 open Fun
 open Bos.OS
 
+module ContextMap = TCOND.ContextMap
+
+module Context = TCOND.Context
+
 type 'a printer = Format.formatter -> 'a -> unit
-
-module ContextMap = Map.Make (struct
-  type t = Grammar.t list
-  let compare = List.compare Grammar.compare
-end)
-
-module Context = struct
-  type t = Grammar.t list
-
-  let pp =
-    let f s fmt () = Format.fprintf fmt "%s" s in
-    List.pp ~pp_sep:(f "; ") ~pp_start:(f "[") ~pp_stop:(f "]") Grammar.pp
-
-  let to_string a = String.concat "\t" (List.map Grammar.to_string a)
-
-  let of_string s = List.map Grammar.of_string @@ String.split_on_char '\t' s
-end
 
 type t = PCFG.t * PCFG.t ContextMap.t
 
@@ -35,34 +22,9 @@ type raw_t = PCFG.raw_t * (Context.t * PCFG.raw_t) list
 module T = TCOND
 module M = Grammar.Map
 
-(* enumerate all the nodes of the AST using the move operators *)
-let loc_list =
-  let rec aux = function
-    Tree.Node (_, []) -> [[]]
-  | Tree.Node (_, ns) ->
-      let open List in
-      let locs =
-        let* i, node = mapi Pair.make ns in
-        let+ loc = aux node in
-        T.(M DownFirst::rev_append (replicate i (M Right)) loc) in
-      []::locs
-  in List.rev % aux
-
-(* enumerate all the context + production rule pairs of the training AST set *)
-let enumerate_hog p =
-  let open List in
-  fold_left
-  (fun acc ast ->
-    let contexts =
-      let+ loc = rev @@ loc_list ast in
-      let h, l = T.apply loc ast p in
-      l, h in
-    rev_append contexts acc)
-  []
-
 let train ntMap p asts =
   let open List in
-  let pairs = enumerate_hog p asts in
+  let pairs = T.enumerate_context_rule_pairs p asts in
   let aux acc (context, rule) =
     let f = function None -> Some [rule] | Some l -> Some (rule::l) in
     ContextMap.update context f acc in
@@ -118,8 +80,6 @@ let rule_cost (basePCFG, m) context rule =
   Option.get_or ~default:(PCFG.rule_cost basePCFG rule) costOpt
 
 let ast_cost phog p t =
-  let pairs = enumerate_hog p [t] in
+  let pairs = T.enumerate_context_rule_pairs p [t] in
   List.map (uncurry (rule_cost phog)) pairs
   |> List.fold_left (+.) 0.
-
-

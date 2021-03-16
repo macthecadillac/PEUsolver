@@ -189,7 +189,7 @@ let parse_constraints (spec : Sexp.t list) =
     match args with
       `Atom "f"::s -> List.map sexp_atom s |> Result.flatten_l
     | _ -> Error (`Msg "Grammar.parse_constraints: malformed constraint") in
-  let parse = function
+  let parse_c = function
       [`Atom "constraint"; `List [`Atom "="; fargs; `Atom res]] ->
         let+ args = parse_args fargs in
         args, res
@@ -207,7 +207,7 @@ let parse_constraints (spec : Sexp.t list) =
   let* out = List.nth spec 3 |> sexp_atom in
   let* outputType = parse_type out in
   let* argTypes = List.map parse_arg_type argList |> Result.flatten_l in
-  let* constraints = List.map parse constraints |> Result.flatten_l in
+  let* constraints = List.map parse_c constraints |> Result.flatten_l in
   Result.flatten_l
   @@ List.map
      (fun (args, res) ->
