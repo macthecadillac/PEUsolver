@@ -51,24 +51,48 @@ type tcond = W of write | M of move
 
 type p = tcond list
 
-let is_write = function W _ -> true | M _ -> false
+let tcond_to_string = function
+    W WriteValue -> "WriteValue"
+  | M Up -> "Up"
+  | M Left -> "Left"
+  | M Right -> "Right"
+  | M DownFirst -> "DownFirst"
+  | M DownLast -> "DownLast"
+  | M PrevDFS -> "PrevDFS"
+
+let tcond_of_string = function
+    "WriteValue" -> W WriteValue
+  | "Up" -> M Up
+  | "Left" -> M Left
+  | "Right" -> M Right
+  | "DownFirst" -> M DownFirst
+  | "DownLast" -> M DownLast
+  | "PrevDFS" -> M PrevDFS
+  | _ -> raise (Invalid_argument "TCOND.tcond_of_string: unrecognized operator")
 
 type 'a printer = Format.formatter -> 'a -> unit
 
-let pp fmt tcond =
-  let to_string = function
-      W WriteValue -> "WriteValue"
-    | M Up -> "Up"
-    | M Left -> "Left"
-    | M Right -> "Right"
-    | M DownFirst -> "DownFirst"
-    | M DownLast -> "DownLast"
-    | M PrevDFS -> "PrevDFS" in
-  Format.fprintf fmt "%s" @@ to_string tcond
+let pp fmt tcond = Format.fprintf fmt "%s" @@ tcond_to_string tcond
 
 let pp' =
   let f s fmt () = Format.fprintf fmt "%s" s in
   List.pp ~pp_sep:(f "; ") ~pp_start:(f "[") ~pp_stop:(f "]") pp
+
+let p_to_string =
+  let f s fmt () = Format.fprintf fmt "%s" s in
+  let pp = List.pp ~pp_sep:(f " ") ~pp_start:(f "") ~pp_stop:(f "") pp in
+  Format.sprintf "%a" pp
+
+let p_of_string = String.split_on_char ' ' %> List.map tcond_of_string
+
+let save tcondP fpath = Bos.OS.File.write fpath (p_to_string tcondP)
+
+let load fpath =
+  let open Result in
+  let+ str = Bos.OS.File.read fpath in
+  p_of_string str
+
+let is_write = function W _ -> true | M _ -> false
 
 let moveOps = [M Up; M Left; M Right; M DownFirst; M DownLast; M PrevDFS]
 
@@ -164,14 +188,23 @@ let delete = function
 let modify = function
     [] | [_] as a -> Some a
   | _::([_] as w) -> Some (R.run (R.pick_list firstOp)::w)
-  | chunk -> let n = R.run (R.int_range 1 (List.length chunk - 2)) in
-             let op = R.run (R.pick_list moveOps) in
-             Some (List.map_nth_opt (const (Some op)) n chunk)
+  | chunk ->
+      let len = List.length chunk in
+      let op = R.run (R.pick_list moveOps) in
+      if len <= 2 then
+        Some (List.map_nth_opt (const (Some op)) 1 chunk)
+      else
+        let n = R.run (R.int_range 1 (List.length chunk - 2)) in
+        Some (List.map_nth_opt (const (Some op)) n chunk)
 
 let add chunk =
-  let n = R.run (R.int_range 1 (List.length chunk - 2)) in
+  let len = List.length chunk in
   let op = R.run (R.pick_list moveOps) in
-  Some (List.map_nth_opt (const (Some op)) n chunk)
+  if len <= 2 then
+    Some (List.map_nth_opt (const (Some op)) 1 chunk)
+  else
+    let n = R.run (R.int_range 1 (List.length chunk - 2)) in
+    Some (List.map_nth_opt (const (Some op)) n chunk)
 
 let append =
   let op = R.pick_list firstOp in
@@ -182,18 +215,26 @@ let mutate p =
   let open Random in
   let partition =
     let rec aux acc1 acc2 = function
-        [] -> List.rev @@ List.rev acc1::acc2
+        [] -> acc2
       | (W _ as w)::tl -> aux [] (List.rev (w::acc1)::acc2) tl
       | hd::tl -> aux (hd::acc1) acc2 tl in
     aux [] [] in
-  let* op = pick_list [`I delete; `I modify; `I add; `A append] in
+  let chunks = partition p in
+  (* Format.printf "%a\n" (List.pp pp') chunks; *)
+  (* Format.print_flush (); *)
+  let ops =
+    if List.length p <= 2 then [`I add; `A append]
+    else if List.length chunks <= 1 then [`I modify; `I add; `A append]
+    else [`I delete; `I modify; `I add; `A append] in
+  let* op = pick_list ops in
   match op with
     `A l -> map (List.append p) l
   | `I f ->
-      let chunks = partition p in
       let len = List.length chunks in
-      let+ n = int len in
-      List.map_nth_opt f n chunks |> List.flatten
+      if len <= 1 then return (List.flatten chunks)
+      else
+        let+ n = int len in
+        List.map_nth_opt f n chunks |> List.flatten
 
 let initPool =
   let aux l : p * p list =
@@ -257,3 +298,34 @@ let cost asts tcondP lambda =
   let nWrites = Float.of_int @@ List.length @@ List.filter is_write tcondP in
   let nAST = Float.of_int @@ List.length asts in
   tcondPTrainingSetScore /. nAST +. lambda *. nWrites
+
+module H = PairingHeap.Make (struct
+  type t = float * p
+  let compare a b = Float.compare (fst a) (fst b)
+end)
+
+let cost_tcond_pp fmt (f, tcondP) =
+  Format.fprintf fmt "(%a, %a)" Float.pp f pp' tcondP
+
+let train trainingSet lambda maxIter =
+  let rec aux h iter =
+    if iter >= maxIter then h
+    else begin
+      Format.printf "TCOND training iteration %i\r" iter;
+      Format.print_flush ();
+      let _, p = H.find_min_exn h in
+      (* Format.printf "%a\n" (H.pp cost_tcond_pp) h; *)
+      (* Format.print_flush (); *)
+      (* read_line (); *)
+      let p' = Random.run (mutate p) in
+      if List.is_empty p' || List.length p' <= 1 then aux h iter
+      else
+        let h' = H.insert h (cost trainingSet p' lambda, p') in
+        aux h' (iter + 1)
+    end
+  in
+  let startP = [M Up; W WriteValue] in
+  let startCost = cost trainingSet startP lambda in
+  let startH = H.singleton (startCost, startP) in
+  let endH = aux startH 0 in
+  snd (H.find_min_exn endH)

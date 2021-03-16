@@ -12,7 +12,7 @@ end
 
 let baseDir = Result.(Fpath.parent <$> OS.Dir.current ())
 
-type cmd = EnumPCFG | TrainPHOG | TrainPCFG | EnumPHOG | RunPCFG | RunPHOG | PrintHelp
+type cmd = EnumPCFG | TrainPHOG | TrainPCFG | EnumPHOG | RunPCFG | RunPHOG | TrainTCOND | PrintHelp
 type mode = PCFG | PHOG
 type order = AS | FAS
 
@@ -153,6 +153,25 @@ module Train (P : Sig.P) (Env: E) : T = struct
     print_result result
 end
 
+let train_tcond maxIter =
+  let open Result in
+  let result =
+    let* projBase = baseDir in
+    let path = Fpath.(projBase / "benchmark" / "string" / "train") in
+    let* rawSpecs = Bos.OS.Dir.contents path in
+    let* specs = List.map Grammar.parse_spec rawSpecs |> flatten_l in
+    let* ntMaps = List.map Grammar.rule_nttype_map specs |> flatten_l in
+    let* ntMap =
+      List.fold_left
+      (fun acc m -> acc >>= Grammar.merge_rule_nttype_maps m)
+      (Ok Grammar.Map.empty) ntMaps in
+    let* asts = List.map (Grammar.build_solution_ast ntMap) specs |> flatten_l in
+    let tcondP = TCOND.train asts 0.1 maxIter in  (** hard code lambda *)
+    let path = Fpath.(projBase / "benchmark" / "TCOND") in
+    Format.printf "Done.";
+    TCOND.save tcondP path in
+  print_result result
+
 let make_env ?tcondP name = (module struct
   let name = name
   let tcondP = Option.get_or ~default:[] tcondP
@@ -160,7 +179,7 @@ end : E)
 
 let tcondP = TCOND.[M Right; W WriteValue; M Up; W WriteValue]
 
-let exe n order spec = function
+let exe n order spec maxIter = function
     EnumPCFG ->
       let env = make_env "pcfg" in
       let (module E) = (module Enumerate (PCFG) (val env) : R) in
@@ -185,6 +204,7 @@ let exe n order spec = function
       let env = make_env "phog" ~tcondP in
       let (module S) = (module Synthesize (PHOG) (val env) : R) in
       S.run n order spec
+  | TrainTCOND -> train_tcond maxIter
   | PrintHelp ->
       let msg = "A required argument is missing. "
         ^ "See the help page for more information." in
@@ -197,7 +217,8 @@ let man = [
   `Pre "enum-pcfg\t\tEnumerate candidates with the trained PCFG model."; `Noblank;
   `Pre "enum-phog\t\tEnumerate candidates with the trained PHOG model."; `Noblank;
   `Pre "run-pcfg\t\tRun a simple PBE synthesizer on a given spec with the trained PCFG model."; `Noblank;
-  `Pre "run-phog\t\tRun a simple PBE synthesizer on a given spec with the trained PHOG model.";
+  `Pre "run-phog\t\tRun a simple PBE synthesizer on a given spec with the trained PHOG model."; `Noblank;
+  `Pre "train-tcond\t\tTrain the TCOND program.";
 ]
 
 let info =
@@ -217,12 +238,17 @@ let spec =
   let doc = "The name of the spec file." in
   Arg.(value @@ opt string "" @@ info ["f"; "spec"] ~doc)
 
+let maxIter =
+  let doc = "The maximum number of iterations during TCOND training." in
+  Arg.(value @@ opt int 20000 @@ info ["i"; "maxiter"] ~doc)
+
 let runMode =
   let cmds = ["train-phog", TrainPHOG; "train-pcfg", TrainPCFG;
               "enum-pcfg", EnumPCFG; "enum-phog", EnumPHOG;
-              "run-pcfg", RunPCFG; "run-phog", RunPHOG] in
+              "run-pcfg", RunPCFG; "run-phog", RunPHOG;
+              "train-tcond", TrainTCOND] in
   Arg.(value @@ pos 0 (enum cmds) PrintHelp @@ info [])
 
 let () =
-  let main = Term.(const exe $ nEnum $ order $ spec $ runMode) in
+  let main = Term.(const exe $ nEnum $ order $ spec $ maxIter $ runMode) in
   Term.exit @@ Term.eval (main, info)

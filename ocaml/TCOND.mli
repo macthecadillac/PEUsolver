@@ -46,6 +46,13 @@ val generate_probability_map : p -> AST.t list -> float ContextRuleMap.t
 
 val cost : AST.t list -> p -> float -> float
 
+(** A very simple train routine *)
+val train : AST.t list -> float -> int -> p
+
+val save : p -> Fpath.t -> (unit, [`Msg of string]) result
+
+val load : Fpath.t -> (p, [`Msg of string]) result
+
 (** Pretty printer for TCOND operators *)
 val pp : tcond printer
 
