@@ -1,12 +1,9 @@
-module type PATHORDER = sig
-  type t = float * (int * Grammar.t) list
-  val compare : t -> t -> int
-end
-
 module type ENV = sig
+  val order : [`HMax | `HMin | `LeftFirst | `RightFirst]
   val succMap : Grammar.t list Grammar.Map.t
   val ast_cost : Grammar.t Tree.t -> float
-  val heuristics : AST.t -> TCOND.tcond list -> float
+  val heuristics_w_context : TCOND.tcond list -> AST.t -> float
+  val heuristics : Grammar.t -> float
 end
 
 module type S = sig
@@ -14,4 +11,4 @@ module type S = sig
   val sequence : Grammar.t Tree.t Seq.t
 end
 
-module Make (E : ENV) (O : PATHORDER) : S
+module Make (E : ENV) : S

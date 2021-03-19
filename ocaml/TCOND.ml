@@ -47,7 +47,7 @@ type move =
 
 type write = WriteValue
 
-type tcond = W of write | M of move
+type tcond = Empty | W of write | M of move
 
 type p = tcond list
 
@@ -59,6 +59,7 @@ let tcond_to_string = function
   | M DownFirst -> "DownFirst"
   | M DownLast -> "DownLast"
   | M PrevDFS -> "PrevDFS"
+  | Empty -> ""
 
 let tcond_of_string = function
     "WriteValue" -> W WriteValue
@@ -68,6 +69,7 @@ let tcond_of_string = function
   | "DownFirst" -> M DownFirst
   | "DownLast" -> M DownLast
   | "PrevDFS" -> M PrevDFS
+  | "" -> Empty
   | _ -> raise (Invalid_argument "TCOND.tcond_of_string: unrecognized operator")
 
 type 'a printer = Format.formatter -> 'a -> unit
@@ -92,7 +94,7 @@ let load fpath =
   let+ str = Bos.OS.File.read fpath in
   p_of_string str
 
-let is_write = function W _ -> true | M _ -> false
+let is_write = function W _ -> true | _ -> false
 
 let moveOps = [M Up; M Left; M Right; M DownFirst; M DownLast; M PrevDFS]
 
@@ -124,8 +126,7 @@ let apply loc ast p : Grammar.t * Context.t =
   let rec aux acc i (Tree.Node (_, l) as node) child p dir =
     match move acc i child p `None with
       `Done _ as c -> c
-    | `Continue (`Up, acc', p') ->
-        move acc' i node p' `None
+    | `Continue (`Up, acc', p') -> move acc' i node p' `None
     | `Continue (`Left, acc', p') ->
         if i <= 0
         then
@@ -142,11 +143,12 @@ let apply loc ast p : Grammar.t * Context.t =
         else aux acc' (i + 1) node (List.nth l (i + 1)) p' `None
     | `Continue (`PrevDFS, acc', p') ->
         if i <= 0
-        then `Continue (`Up, acc', p')
+        then move acc' i node p' `None
         else aux acc' (i - 1) node (List.nth l (i - 1)) p' `Child
   and move acc i (Tree.Node (a, l) as node) p dir =
     match p, dir with
       [], `None -> `Done acc
+    | Empty::tl, `None -> move acc i node tl `None
     | M Up::tl, `None -> `Continue (`Up, acc, tl)
     | M Left::tl, `None -> `Continue (`Left, acc, tl)
     | M Right::tl, `None -> `Continue (`Right, acc, tl)

@@ -56,7 +56,7 @@ module Make (E : ORDERING) : S
     match heap1, heap2 with
       Empty, a | a, Empty -> a
     | Heap (elt1, t1), Heap (elt2, t2) ->
-        if E.compare elt1 elt2 <= 0 then Heap (elt1, heap2 :: t1)
+        if E.compare elt1 elt2 < 0 then Heap (elt1, heap2 :: t1)
         else Heap (elt2, heap1 :: t2)
 
   let insert heap elt = meld (Heap (elt, [])) heap

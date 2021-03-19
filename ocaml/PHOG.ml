@@ -89,27 +89,22 @@ let ast_cost phog p t =
 
 let compute_heuristic succMap ((pcfgRaw, _, contextMap) : t) =
   let rec aux map =
-    let f nt p_nt =
-      let prod rhs =
+    let next_iter nt pNT =
+      let get_pmax rhs =
         let phogItem = TCOND.ContextMap.to_list contextMap in
-        let probs = List.map (fun (_, pcfg) ->
-          PCFG.rule_prob pcfg rhs) phogItem in
-        let p_init = List.fold_left Float.max 0. probs in
-        let accum acc nt =
-          let p_nt' = Option.get_exn @@ Grammar.Map.get nt map in
-          acc *. p_nt' in
+        let probs = List.map (fun (_, pcfg) -> PCFG.rule_prob pcfg rhs) phogItem in
+        let pInit = List.fold_left Float.max 0. probs in
+        let product acc nt =
+          let pNT' = Option.get_exn @@ Grammar.Map.get nt map in
+          acc *. pNT' in
         let nextNTs = Grammar.Map.get_or ~default:[] rhs succMap in
-        List.fold_left accum p_init nextNTs in
-      let ps = List.map prod @@ Grammar.Map.get_or ~default:[] nt succMap in
-      let p_max = List.fold_left Float.max p_nt ps in
-      p_max in
-    let map' = Grammar.Map.mapi f map in
+        List.fold_left product pInit nextNTs in
+      let pRHS = List.map get_pmax @@ Grammar.Map.get_or ~default:[] nt succMap in
+      List.fold_left Float.max pNT pRHS in
+    let map' = Grammar.Map.mapi next_iter map in
     if Grammar.Map.equal (fun a b -> abs_float (a -. b) <. 0.0001) map map'
-    then
-      Grammar.Map.map (fun v -> -. (log2 v)) map'
-    else begin
-      aux map'
-    end in
+    then Grammar.Map.map (fun v -> -. (log2 v)) map'
+    else aux map' in
   List.map (function nt, _ -> nt, 0.) pcfgRaw
   |> Grammar.Map.of_list
   |> aux
@@ -119,15 +114,15 @@ let compute_heuristic_with_context succMap (basePCFGRaw, _, contextPCFG) heurist
   let ntContextMap =
     let* nt, _ = basePCFGRaw in
     let+ context, pcfg = ContextMap.to_list contextPCFG in
-    let hs =
-      let+ rule = Option.get_exn @@ Grammar.Map.get nt succMap in
-      let pRHS = PCFG.rule_cost pcfg rule in
-      let hSum =
-        let hRHS = -. (log2 pRHS) in
-        let hs =
-          let+ nt = Grammar.Map.get_or ~default:[] rule succMap in
-          Grammar.Map.get_or ~default:0. nt heuristicMap in
-        fold_left (+.) hRHS hs in
-      hSum in
-    (context, nt), fold_left Float.min Float.nan hs in
+    let h_min acc rule =
+      let init = PCFG.rule_cost pcfg rule in
+      let nt's = Grammar.Map.get_or ~default:[] rule succMap in
+      let sum_h acc nt' =
+        let hNT' = Grammar.Map.get_or ~default:0.001 nt heuristicMap in
+        hNT' +. acc in
+      let hRule = List.fold_left sum_h init nt's in
+      Float.min acc hRule in
+    let rules = Option.get_exn @@ Grammar.Map.get nt succMap in
+    let hMin = List.fold_left h_min Float.nan rules in
+    (context, nt), hMin in
   TCOND.ContextRuleMap.of_list ntContextMap

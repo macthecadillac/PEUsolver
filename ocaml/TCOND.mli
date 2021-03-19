@@ -28,7 +28,7 @@ type move =
 
 type write = WriteValue
 
-type tcond = W of write | M of move
+type tcond = Empty | W of write | M of move
 
 type p = tcond list
 
