@@ -44,7 +44,7 @@ let count ntMap rules =
     rule, count in
   ntType, assocs
 
-let train ntMap _ asts =
+let train ntMap asts =
   let open List.Infix in
   let rules =
     let* ast = asts in
@@ -112,12 +112,8 @@ let rule_prob pcfg rule =
 
 let rule_cost pcfg rule = -. log2 (rule_prob pcfg rule)
 
-let ast_cost pcfg _ t =
+let ast_cost pcfg t =
   let aux = function
       s, [] -> rule_cost pcfg s (* terminals *)
     | s, l -> List.fold_left (+.) (rule_cost pcfg s) l in
   Tree.fold (curry aux) t
-
-let compute_heuristic _ _ = Grammar.Map.empty
-
-let compute_heuristic_with_context _ _ _ = TCOND.ContextRuleMap.empty

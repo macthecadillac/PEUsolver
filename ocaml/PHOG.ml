@@ -36,7 +36,7 @@ let train ntMap p asts =
       |> ContextMap.to_list in
     let* () = mguard @@ not @@ is_empty context in (* discard empty context *)
     [context, PCFG.count ntMap rules] in
-  PCFG.train ntMap [] asts, l
+  PCFG.train ntMap asts, l
 
 let compile ntMap (p_raw, l) =
   let open List.Infix in
