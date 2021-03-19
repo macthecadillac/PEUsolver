@@ -1,0 +1,377 @@
+2.184573902011824 (str.substr _arg_0 0 0)
+n_get: 6
+n_put: 42
+4.432501415455409 (str.substr _arg_0 0 4)
+n_get: 14
+n_put: 105
+6.432501415455409 (str.substr _arg_0 0 (str.len _arg_0))
+n_get: 20
+n_put: 147
+6.680428928898995 (str.substr _arg_0 (- (str.len _arg_0) 3) 4)
+n_get: 25
+n_put: 182
+6.680428928898995 (str.substr _arg_0 4 4)
+n_get: 27
+n_put: 189
+8.076357605230134 (str.substr _arg_0 0 3)
+n_get: 32
+n_put: 229
+8.680428928898996 (str.substr _arg_0 4 (str.len _arg_0))
+n_get: 41
+n_put: 293
+9.076357605230136 (str.substr _arg_0 0 5)
+n_get: 47
+n_put: 334
+9.586370695113965 " "
+n_get: 50
+n_put: 356
+9.586370695113965 "+"
+n_get: 51
+n_put: 356
+9.586370695113965 "-"
+n_get: 52
+n_put: 356
+10.32428511867372 (str.substr _arg_0 4 3)
+n_get: 70
+n_put: 506
+2.184573902011824 (str.substr _arg_0 0 0)
+n_get: 6
+n_put: 42
+4.432501415455409 (str.substr _arg_0 0 4)
+n_get: 14
+n_put: 105
+6.432501415455409 (str.substr _arg_0 0 (str.len _arg_0))
+n_get: 20
+n_put: 147
+6.680428928898995 (str.substr _arg_0 (- (str.len _arg_0) 3) 4)
+n_get: 25
+n_put: 182
+6.680428928898995 (str.substr _arg_0 4 4)
+n_get: 27
+n_put: 189
+8.076357605230134 (str.substr _arg_0 0 3)
+n_get: 32
+n_put: 229
+8.680428928898996 (str.substr _arg_0 4 (str.len _arg_0))
+n_get: 41
+n_put: 293
+9.076357605230136 (str.substr _arg_0 0 5)
+n_get: 47
+n_put: 334
+9.586370695113965 " "
+n_get: 50
+n_put: 356
+9.586370695113965 "+"
+n_get: 51
+n_put: 356
+9.586370695113965 "-"
+n_get: 52
+n_put: 356
+10.32428511867372 (str.substr _arg_0 4 3)
+n_get: 70
+n_put: 506
+10.324285118673721 (str.substr _arg_0 3 4)
+n_get: 72
+n_put: 513
+11.324285118673721 (str.substr _arg_0 4 5)
+n_get: 104
+n_put: 782
+11.324285118673721 (str.substr _arg_0 5 4)
+n_get: 106
+n_put: 789
+12.324285118673721 (str.substr _arg_0 3 (str.len _arg_0))
+n_get: 126
+n_put: 964
+12.393725617171569 "."
+n_get: 132
+n_put: 1004
+12.997841542663863 (str.substr _arg_0 (+ 5 3) 4)
+n_get: 146
+n_put: 1117
+13.088312609067223 (str.substr _arg_0 (- (str.len _arg_0) 3) 1)
+n_get: 151
+n_put: 1152
+13.088312609067223 (str.substr _arg_0 1 4)
+n_get: 153
+n_put: 1159
+13.088312609067223 (str.substr _arg_0 4 1)
+n_get: 155
+n_put: 1166
+13.324285118673721 (str.substr _arg_0 5 (str.len _arg_0))
+n_get: 166
+n_put: 1257
+13.656302031184667 (str.substr _arg_0 0 (- (str.len _arg_0) 3))
+n_get: 210
+n_put: 1622
+13.968141308448445 (str.substr _arg_0 3 3)
+n_get: 220
+n_put: 1708
+14.19687041254737 (str.substr _arg_0 0 2)
+n_get: 234
+n_put: 1807
+14.60968733753597 (str.substr _arg_0 (- 5 3) 4)
+n_get: 266
+n_put: 2085
+14.965831147761243 (str.substr (str.++ "." _arg_0) 0 4)
+n_get: 297
+n_put: 2356
+14.968141308448445 (str.substr _arg_0 3 5)
+n_get: 300
+n_put: 2369
+14.968141308448445 (str.substr _arg_0 5 3)
+n_get: 302
+n_put: 2376
+14.997841542663863 (str.substr _arg_0 (+ 5 1) 4)
+n_get: 306
+n_put: 2401
+14.997841542663863 (str.substr _arg_0 (+ 5 3) (str.len _arg_0))
+n_get: 308
+n_put: 2408
+15.088312609067223 (str.substr _arg_0 1 (str.len _arg_0))
+n_get: 313
+n_put: 2438
+15.968141308448445 (str.substr _arg_0 5 5)
+n_get: 453
+n_put: 3623
+16.373714827929472 (str.substr _arg_0 (- (str.len _arg_0) 1) 4)
+n_get: 479
+n_put: 3858
+16.444797925990954 (str.substr _arg_0 (- (str.len _arg_0) 3) 2)
+n_get: 507
+n_put: 4100
+16.444797925990954 (str.substr _arg_0 4 2)
+n_get: 509
+n_put: 4107
+16.60968733753597 (str.substr _arg_0 (- 5 3) (str.len _arg_0))
+n_get: 539
+n_put: 4362
+16.64169773243859 (str.substr _arg_0 (+ 5 3) 3)
+n_get: 549
+n_put: 4439
+16.665266203576994 (str.substr _arg_0 (+ (str.indexof _arg_0 " " 0) 3) 4)
+n_get: 551
+n_put: 4446
+16.665266203576994 (str.substr _arg_0 (+ (str.indexof _arg_0 "-" 0) 3) 4)
+n_get: 553
+n_put: 4453
+16.732168798841947 (str.substr _arg_0 1 3)
+n_get: 560
+n_put: 4505
+16.732168798841947 (str.substr _arg_0 3 1)
+n_get: 562
+n_put: 4512
+16.94392269973205 (str.replace _arg_0 " " _arg_0)
+n_get: 599
+n_put: 4828
+16.94392269973205 (str.replace _arg_0 "+" _arg_0)
+n_get: 601
+n_put: 4835
+16.94392269973205 (str.replace _arg_0 "-" _arg_0)
+n_get: 603
+n_put: 4842
+16.965831147761243 (str.substr (str.++ "." _arg_0) 0 (str.len _arg_0))
+n_get: 608
+n_put: 4870
+16.997841542663863 (str.substr _arg_0 (+ 5 1) (str.len _arg_0))
+n_get: 616
+n_put: 4943
+17.213758661204828 (str.substr (str.++ "." _arg_0) (- (str.len _arg_0) 3) 4)
+n_get: 671
+n_put: 5399
+17.64169773243859 (str.substr _arg_0 (+ 5 3) 5)
+n_get: 774
+n_put: 6320
+17.665266203576994 (str.substr _arg_0 (+ (str.indexof _arg_0 " " 0) 0) 4)
+n_get: 795
+n_put: 6456
+17.665266203576994 (str.substr _arg_0 (+ (str.indexof _arg_0 "-" 0) 0) 4)
+n_get: 797
+n_put: 6463
+17.732168798841947 (str.substr _arg_0 5 1)
+n_get: 804
+n_put: 6520
+17.73216879884195 (str.substr _arg_0 1 5)
+n_get: 806
+n_put: 6527
+18.211658069820498 (str.substr _arg_0 (+ 5 4) 4)
+n_get: 945
+n_put: 7695
+18.211658069820498 (str.substr _arg_0 (+ 5 5) 4)
+n_get: 947
+n_put: 7702
+18.253543527310693 (str.substr _arg_0 (- 5 3) 3)
+n_get: 959
+n_put: 7816
+18.36227993286719 (str.substr _arg_0 0 (+ 3 3))
+n_get: 977
+n_put: 7959
+18.609687337535966 (str.substr (str.++ "." _arg_0) 0 3)
+n_get: 1021
+n_put: 8330
+18.64169773243859 (str.substr _arg_0 (+ 5 1) 3)
+n_get: 1039
+n_put: 8477
+18.665266203576994 (str.substr _arg_0 (+ (str.indexof _arg_0 " " 0) 1) 4)
+n_get: 1059
+n_put: 8658
+18.665266203576994 (str.substr _arg_0 (+ (str.indexof _arg_0 " " 0) 3) (str.len _arg_0))
+n_get: 1061
+n_put: 8665
+18.665266203576994 (str.substr _arg_0 (+ (str.indexof _arg_0 "-" 0) 1) 4)
+n_get: 1063
+n_put: 8672
+18.665266203576994 (str.substr _arg_0 (+ (str.indexof _arg_0 "-" 0) 3) (str.len _arg_0))
+n_get: 1065
+n_put: 8679
+19.073205716677016 (str.at (str.++ "." _arg_0) 3)
+n_get: 1217
+n_put: 10113
+19.253543527310693 (str.substr _arg_0 (- 5 3) 5)
+n_get: 1295
+n_put: 10799
+19.26679962401296 (str.substr (str.++ "." " ") 0 4)
+n_get: 1298
+n_put: 10815
+19.26679962401296 (str.substr (str.++ "." "+") 0 4)
+n_get: 1302
+n_put: 10837
+19.26679962401296 (str.substr (str.++ "." "-") 0 4)
+n_get: 1306
+n_put: 10859
+19.405725222832093 (str.substr _arg_0 (+ 5 3) 1)
+n_get: 1372
+n_put: 11353
+19.46766833266354 (str.substr _arg_0 (+ 4 3) 4)
+n_get: 1402
+n_put: 11604
+19.496196289235453 (str.substr _arg_0 1 1)
+n_get: 1407
+n_put: 11634
+19.609687337535966 (str.substr (str.++ "." ".") 0 4)
+n_get: 1455
+n_put: 12042
+19.60968733753597 (str.substr (str.++ "." _arg_0) 0 5)
+n_get: 1465
+n_put: 12118
+19.64169773243859 (str.substr _arg_0 (+ 5 1) 5)
+n_get: 1492
+n_put: 12372
+19.651006780290686 (str.substr _arg_0 0 (+ (str.indexof _arg_0 " " 0) 3))
+n_get: 1499
+n_put: 12410
+19.651006780290686 (str.substr _arg_0 0 (+ (str.indexof _arg_0 "-" 0) 3))
+n_get: 1501
+n_put: 12417
+19.665266203576994 (str.substr _arg_0 (+ (str.indexof _arg_0 " " 0) 0) (str.len _arg_0))
+n_get: 1506
+n_put: 12452
+19.665266203576994 (str.substr _arg_0 (+ (str.indexof _arg_0 "-" 0) 0) (str.len _arg_0))
+n_get: 1508
+n_put: 12459
+19.730200144853203 (str.substr _arg_0 (- (str.len _arg_0) 2) 4)
+n_get: 1547
+n_put: 12780
+20.088654115765678 (str.substr _arg_0 3 2)
+n_get: 1780
+n_put: 14819
+20.19739864653419 (str.substr _arg_0 0 (- (- (str.len _arg_0) 3) 3))
+n_get: 1847
+n_put: 15334
+20.211658069820498 (str.substr _arg_0 (+ 5 4) (str.len _arg_0))
+n_get: 1850
+n_put: 15352
+20.211658069820498 (str.substr _arg_0 (+ 5 5) (str.len _arg_0))
+n_get: 1852
+n_put: 15359
+20.30912239335172 (str.substr _arg_0 (+ (str.indexof _arg_0 " " 0) 3) 3)
+n_get: 1955
+n_put: 16236
+20.30912239335172 (str.substr _arg_0 (+ (str.indexof _arg_0 "-" 0) 3) 3)
+n_get: 1957
+n_put: 16243
+20.54082481376473 (str.replace _arg_0 (str.substr _arg_0 0 0) _arg_0)
+n_get: 2033
+n_put: 16930
+20.610207446310774 (str.substr _arg_0 4 (+ 3 3))
+n_get: 2067
+n_put: 17216
+20.651006780290686 (str.substr _arg_0 0 (+ (str.indexof _arg_0 " " 0) 0))
+n_get: 2108
+n_put: 17620
+20.651006780290686 (str.substr _arg_0 0 (+ (str.indexof _arg_0 "-" 0) 0))
+n_get: 2110
+n_put: 17627
+20.665266203576994 (str.substr _arg_0 (+ (str.indexof _arg_0 " " 0) 1) (str.len _arg_0))
+n_get: 2115
+n_put: 17659
+20.665266203576994 (str.substr _arg_0 (+ (str.indexof _arg_0 "-" 0) 1) (str.len _arg_0))
+n_get: 2117
+n_put: 17666
+20.68420802775455 (str.substr _arg_0 0 (+ 4 3))
+n_get: 2127
+n_put: 17750
+20.68420802775455 (str.substr _arg_0 0 (+ 5 3))
+n_get: 2129
+n_put: 17757
+20.85761485097955 (str.substr (str.++ "." _arg_0) (- (str.len _arg_0) 3) 3)
+n_get: 2234
+n_put: 18635
+21.088654115765678 (str.substr _arg_0 5 2)
+n_get: 2405
+n_put: 20182
+21.25367227424576 (int.to.str 0)
+n_get: 2520
+n_put: 21194
+21.30912239335172 (str.substr _arg_0 (+ (str.indexof _arg_0 " " 0) 0) 3)
+n_get: 2638
+n_put: 22242
+21.30912239335172 (str.substr _arg_0 (+ (str.indexof _arg_0 " " 0) 3) 5)
+n_get: 2640
+n_put: 22249
+21.30912239335172 (str.substr _arg_0 (+ (str.indexof _arg_0 "-" 0) 0) 3)
+n_get: 2642
+n_put: 22256
+21.405725222832093 (str.substr _arg_0 (+ 5 1) 1)
+n_get: 2716
+n_put: 22879
+21.46766833266354 (str.substr _arg_0 (+ 4 3) (str.len _arg_0))
+n_get: 2746
+n_put: 23165
+21.538945746172942 (str.substr (str.substr _arg_0 4 4) 3 4)
+n_get: 2806
+n_put: 23626
+21.65100678029069 (str.substr _arg_0 0 (+ (str.indexof _arg_0 " " 0) 1))
+n_get: 2895
+n_put: 24419
+21.65100678029069 (str.substr _arg_0 0 (+ (str.indexof _arg_0 "-" 0) 1))
+n_get: 2897
+n_put: 24426
+21.74771097006071 (str.substr _arg_0 (+ (str.indexof _arg_0 " " 3) 3) 4)
+n_get: 2995
+n_put: 25209
+21.82108897495444 (str.substr (str.++ _arg_0 _arg_0) (- (str.len _arg_0) 3) 4)
+n_get: 3060
+n_put: 25757
+21.85551425959522 (str.substr _arg_0 (+ 5 4) 3)
+n_get: 3091
+n_put: 26018
+21.85551425959522 (str.substr _arg_0 (+ 5 5) 3)
+n_get: 3093
+n_put: 26025
+21.89893429373427 (str.substr _arg_0 4 (+ (str.indexof _arg_0 " " 0) 3))
+n_get: 3173
+n_put: 26708
+21.89893429373427 (str.substr _arg_0 4 (+ (str.indexof _arg_0 "-" 0) 3))
+n_get: 3175
+n_put: 26715
+22.121568738238416 (int.to.str 3)
+n_get: 3460
+n_put: 29216
+22.30912239335172 (str.substr _arg_0 (+ (str.indexof _arg_0 " " 0) 0) 5)
+n_get: 3651
+n_put: 30914
+22.30912239335172 (str.substr _arg_0 (+ (str.indexof _arg_0 " " 0) 1) 3)
+n_get: 3653
+n_put: 30921
+2
+(define-fun f ((name String)) String (str.substr name (+ (str.indexof name " " 0) 1) 3))
