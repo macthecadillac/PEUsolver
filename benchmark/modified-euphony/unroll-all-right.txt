@@ -1,0 +1,31 @@
+------------------------------------------------------------------------------------------------------------------------
+                                                 EUPHONY 
+  String Benchmarks                   |E|      |P|     Time 
+------------------------------------------------------------------------------------------------------------------------
+  exceljet1.sl                          3       -1     30.0
+  exceljet2.sl                          3       -1     30.0
+  exceljet3.sl                          4       -1     30.0
+  exceljet4.sl                          4       -1     30.0
+  phone-5-long-repeat.sl              400       -1     30.0
+  phone-5-long.sl                     100       -1     30.0
+  phone-5-short.sl                      7       -1     30.0
+  phone-5.sl                            7       -1     30.0
+  phone-6-long-repeat.sl              400       -1     12.5
+  phone-6-long.sl                     100       -1     12.1
+  phone-6-short.sl                      7       -1     11.5
+  phone-6.sl                            7       -1     12.1
+  phone-7-long-repeat.sl              400       -1     14.2
+  phone-7-long.sl                     100       -1     12.7
+  phone-7-short.sl                      7       -1     12.7
+  phone-7.sl                            7       -1     21.0
+  stackoverflow1.sl                     3       -1     30.0
+  stackoverflow10.sl                   16       -1     30.0
+  stackoverflow11.sl                    3       -1     30.0
+  stackoverflow2.sl                     2       -1     30.0
+  stackoverflow3.sl                     3       -1     30.1
+  stackoverflow4.sl                     3       -1     30.0
+  stackoverflow5.sl                     2       -1     30.1
+  stackoverflow6.sl                     2       -1     30.1
+  stackoverflow7.sl                     2       -1     30.0
+  stackoverflow8.sl                     2       -1     30.0
+  stackoverflow9.sl                     2       -1     30.0
